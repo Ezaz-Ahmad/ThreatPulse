@@ -1,5 +1,15 @@
-export default function ShowMoreControl({ shown, total, remaining, hasMore, step, onShowMore, onShowAll }) {
-  if (!hasMore) return null;
+export default function ShowMoreControl({
+  shown,
+  total,
+  remaining,
+  hasMore,
+  canCollapse,
+  step,
+  onShowMore,
+  onShowAll,
+  onReset,
+}) {
+  if (!hasMore && !canCollapse) return null;
   const pct = total ? Math.round((shown / total) * 100) : 0;
 
   return (
@@ -9,16 +19,25 @@ export default function ShowMoreControl({ shown, total, remaining, hasMore, step
       </div>
       <div className="show-more-row">
         <span className="show-more-status">
-          Showing {shown} of {total}
+          {hasMore ? `Showing ${shown} of ${total}` : `Showing all ${total}`}
         </span>
         <div className="show-more-actions">
-          <button type="button" className="show-more-btn" onClick={onShowMore}>
-            Show {Math.min(step, remaining)} More
-            <span className="show-more-badge">{remaining} left</span>
-          </button>
-          <button type="button" className="show-more-all" onClick={onShowAll}>
-            Show all
-          </button>
+          {hasMore && (
+            <button type="button" className="show-more-btn" onClick={onShowMore}>
+              Show {Math.min(step, remaining)} More
+              <span className="show-more-badge">{remaining} left</span>
+            </button>
+          )}
+          {hasMore && (
+            <button type="button" className="show-more-all" onClick={onShowAll}>
+              Show all
+            </button>
+          )}
+          {canCollapse && (
+            <button type="button" className="show-more-all" onClick={onReset}>
+              Show less
+            </button>
+          )}
         </div>
       </div>
     </div>

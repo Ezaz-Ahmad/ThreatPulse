@@ -22,6 +22,9 @@ export function useShowMore(list, initialCount = 10, step = 10) {
     shown: visible.length,
     remaining,
     hasMore: remaining > 0,
+    // True once the user has expanded past the first page — lets the UI
+    // offer a way back to "Show less" instead of being stuck fully expanded.
+    canCollapse: count > initialCount,
     showMore: () => setCount((c) => Math.min(safeList.length, c + step)),
     showAll: () => setCount(safeList.length),
     reset: () => setCount(initialCount),

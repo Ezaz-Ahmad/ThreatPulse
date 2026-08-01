@@ -62,7 +62,7 @@ export default function CVETable({ items }) {
     return items.filter((item) => severityKey(item.severity) === filter);
   }, [items, filter]);
 
-  const { visible, shown, total, remaining, hasMore, showMore, showAll } = useShowMore(filtered, 10, 10);
+  const { visible, shown, total, remaining, hasMore, canCollapse, showMore, showAll, reset } = useShowMore(filtered, 10, 10);
 
   if (!items?.length) return <div className="empty-state">No CVEs yet. Try refreshing.</div>;
 
@@ -114,9 +114,11 @@ export default function CVETable({ items }) {
         total={total}
         remaining={remaining}
         hasMore={hasMore}
+        canCollapse={canCollapse}
         step={10}
         onShowMore={showMore}
         onShowAll={showAll}
+        onReset={reset}
       />
     </div>
   );

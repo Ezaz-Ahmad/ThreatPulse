@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import "../App.css";
 import { api } from "../api";
 import ThreatMap, { regionName } from "../components/ThreatMap";
@@ -7,6 +7,8 @@ import CountryDirectory from "../components/CountryDirectory";
 import ScrollButtons from "../components/ScrollButtons";
 import CreatorCredit from "../components/CreatorCredit";
 import { GENERAL_MITIGATIONS } from "../data/mitigationGuidance";
+
+const VICTIM_PAGE_SIZE = 20;
 
 // ransomware.live sometimes reports the sector as the literal string
 // "Not Found" instead of leaving it blank — treat that the same as missing.
@@ -40,11 +42,21 @@ function DueBadge({ dueDate }) {
 }
 
 export default function MapPage() {
-  const [countries, setCountries] = useState(null);
+  // Hero's "Global Threat Map" CTA prefetches this same data and passes it
+  // along via router state so the map paints immediately on arrival instead
+  // of rendering an empty map for the beat it takes to re-fetch. Direct
+  // links/reloads land here with no state, so this just falls back to null
+  // and the effect below fetches it the normal way.
+  const location = useLocation();
+  const [countries, setCountries] = useState(location.state?.prefetchedCountries ?? null);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
   const [victims, setVictims] = useState(null);
   const [victimsLoading, setVictimsLoading] = useState(false);
+  const [victimTotal, setVictimTotal] = useState(null);
+  const [victimLimit, setVictimLimit] = useState(VICTIM_PAGE_SIZE);
+  const [victimSearchInput, setVictimSearchInput] = useState("");
+  const [victimSearch, setVictimSearch] = useState("");
   const [stats, setStats] = useState(null);
   const [advisories, setAdvisories] = useState(null);
   const [patchNow, setPatchNow] = useState(null);
@@ -74,18 +86,57 @@ export default function MapPage() {
     api.kev("?ransomware_only=true&limit=6").then(setPatchNow).catch(() => setPatchNow([]));
   }, []);
 
+  // Switching countries starts a fresh view: clear any search and reset
+  // paging back to the first page rather than carrying over state that
+  // belonged to the previous country.
+  useEffect(() => {
+    setVictimSearchInput("");
+    setVictimSearch("");
+    setVictimLimit(VICTIM_PAGE_SIZE);
+  }, [selected]);
+
+  // Debounce the search box so we're not firing a request per keystroke.
+  // Typing also resets paging back to page one — a fresh search should
+  // start from the top of its own result set, not wherever "load more"
+  // had gotten to.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setVictimSearch(victimSearchInput.trim());
+      setVictimLimit(VICTIM_PAGE_SIZE);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [victimSearchInput]);
+
   useEffect(() => {
     if (!selected) {
       setVictims(null);
+      setVictimTotal(null);
       return;
     }
     setVictimsLoading(true);
-    api
-      .ransomware(`?country=${selected}&limit=20`)
-      .then(setVictims)
-      .catch(() => setVictims([]))
+    const searchQuery = victimSearch ? `&search=${encodeURIComponent(victimSearch)}` : "";
+    // A real request here is often fast enough (well under half a second)
+    // that the loading state just flickers instead of reading as an actual
+    // transition — which is what made "Load more" feel like it had no
+    // animation at all. Holding the loading state open for a beat gives the
+    // spinner + the incoming items' stagger-in animation room to actually
+    // be seen.
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 900));
+    Promise.all([
+      api.ransomware(`?country=${selected}&limit=${victimLimit}${searchQuery}`),
+      api.ransomwareCount(`?country=${selected}${searchQuery}`),
+      minDelay,
+    ])
+      .then(([list, countRes]) => {
+        setVictims(list);
+        setVictimTotal(countRes.total);
+      })
+      .catch(() => {
+        setVictims([]);
+        setVictimTotal(null);
+      })
       .finally(() => setVictimsLoading(false));
-  }, [selected]);
+  }, [selected, victimSearch, victimLimit]);
 
   const totals = useMemo(() => {
     if (!countries) return null;
@@ -211,11 +262,38 @@ export default function MapPage() {
                       )}
                     </div>
 
-                    <h4 className="map-detail-subhead">Recent incidents</h4>
-                    {victimsLoading && <div className="loading-inline">Loading…</div>}
+                    <h4 className="map-detail-subhead">
+                      {victimSearch ? "Search results" : "Incidents"}
+                    </h4>
+                    <input
+                      type="search"
+                      className="country-directory-search"
+                      placeholder={`Search incidents in ${regionName(selectedEntry.country) || selectedEntry.country}…`}
+                      value={victimSearchInput}
+                      onChange={(e) => setVictimSearchInput(e.target.value)}
+                      aria-label="Search incidents for the selected country"
+                    />
+                    {/* Only show the standalone "Loading…" line on the very first
+                        fetch for this country/search (victims is still null) — once
+                        there's a list on screen, hiding/showing this line around it
+                        is what caused the panel to visibly jump on "Load more". A
+                        loading state after that point is instead shown inline inside
+                        the button below, without unmounting anything above it. */}
+                    {victimsLoading && victims === null && (
+                      <div className="loading-inline">
+                        <span className="spinner" /> Loading…
+                      </div>
+                    )}
                     <div className="map-victim-list">
-                      {victims?.map((v) => (
-                        <div className="map-victim-item" key={v.id}>
+                      {victims?.map((v, idx) => (
+                        <div
+                          className="map-victim-item"
+                          key={v.id}
+                          // Stagger by position-within-page rather than raw index, so
+                          // a freshly-appended page of 20 cascades in over ~0.5s
+                          // instead of every earlier item replaying the same delay.
+                          style={{ animationDelay: `${(idx % VICTIM_PAGE_SIZE) * 28}ms` }}
+                        >
                           {v.link ? (
                             <a href={v.link} target="_blank" rel="noreferrer" className="map-victim-name">
                               {v.victim_name}
@@ -231,9 +309,56 @@ export default function MapPage() {
                         </div>
                       ))}
                       {!victimsLoading && victims && victims.length === 0 && (
-                        <div className="empty-state">No incident details available.</div>
+                        <div className="empty-state">
+                          {victimSearch
+                            ? `No incidents match "${victimSearch}".`
+                            : "No incident details available."}
+                        </div>
                       )}
                     </div>
+
+                    {victims && victims.length > 0 && (
+                      <div className="show-more">
+                        <div className="show-more-row">
+                          <span className="show-more-status">
+                            {victimsLoading ? (
+                              <>
+                                <span className="spinner" /> Loading…
+                              </>
+                            ) : (
+                              `Showing ${victims.length} of ${victimTotal ?? victims.length}`
+                            )}
+                          </span>
+                          {victimTotal != null && victims.length < victimTotal && victimLimit < 500 && (
+                            <div className="show-more-actions">
+                              <button
+                                type="button"
+                                className="show-more-btn"
+                                disabled={victimsLoading}
+                                onClick={() => setVictimLimit((n) => Math.min(n + VICTIM_PAGE_SIZE, 500))}
+                              >
+                                {victimsLoading ? (
+                                  <span className="spinner" />
+                                ) : (
+                                  <>
+                                    Load more
+                                    <span className="show-more-badge">
+                                      +{Math.min(VICTIM_PAGE_SIZE, victimTotal - victims.length)}
+                                    </span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {victimTotal != null && victimTotal > 500 && victims.length >= 500 && !victimSearch && (
+                          <p className="map-guidance-note" style={{ marginTop: 10, marginBottom: 0 }}>
+                            Showing the 500 most recent of {victimTotal} incidents. Use search above to find a
+                            specific one beyond that.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="map-detail-card map-detail-empty">
@@ -249,12 +374,15 @@ export default function MapPage() {
                   <h4>
                     Vulnerabilities To Patch Now
                     <span className="map-live-tag"><span className="pulse-dot" />Live</span>
+                    <span className="map-guidance-tag">Worldwide, not per-country</span>
                   </h4>
                   <p className="map-guidance-note">
                     The most concrete answer to "what should we actually do": CISA's Known Exploited
                     Vulnerabilities catalog, filtered to flaws confirmed to be actively used by
-                    ransomware, each with CISA's own remediation deadline. Updates automatically as
-                    CISA adds new entries.
+                    ransomware, each with CISA's own remediation deadline. This list is the same
+                    regardless of which country you select — CISA's KEV catalog tags entries by
+                    vendor/product, not by which country was hit, so there's no real per-country split
+                    to show here. Updates automatically as CISA adds new entries.
                   </p>
                   {patchNow === null && <div className="loading-inline">Loading…</div>}
                   {patchNow && patchNow.length === 0 && (
@@ -285,11 +413,14 @@ export default function MapPage() {
                   <h4>
                     Latest Official Advisories
                     <span className="map-live-tag"><span className="pulse-dot" />Live</span>
+                    <span className="map-guidance-tag">Worldwide, not per-country</span>
                   </h4>
                   <p className="map-guidance-note">
                     Pulled from CISA's own advisory feed (the same one behind the CISA Advisories tab),
-                    filtered to ransomware bulletins. New entries appear here automatically as CISA
-                    publishes them — no fixed schedule on our end, it's tied to their feed.
+                    filtered to ransomware bulletins. Also the same list regardless of country selected
+                    — CISA's advisories aren't tagged by victim country either. New entries appear here
+                    automatically as CISA publishes them — no fixed schedule on our end, it's tied to
+                    their feed.
                   </p>
                   {advisories === null && <div className="loading-inline">Loading…</div>}
                   {advisories && advisories.length === 0 && (

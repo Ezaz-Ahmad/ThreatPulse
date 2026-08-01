@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import HeroClock from "./HeroClock";
 import { api } from "../api";
+
+// Held open for at least this long once the click fires, even if the
+// fetch below resolves instantly — otherwise on a warm backend the spinner
+// is on screen for ~80ms, which reads as a flicker rather than motion.
+const MAP_MIN_LOAD_MS = 450;
 
 const BOOT_LINES = [
   { text: "Connected to 6 threat intelligence sources", tag: "OK" },
@@ -10,7 +15,7 @@ const BOOT_LINES = [
   { text: "Monitoring ransomware leak sites", tag: "LIVE" },
 ];
 
-const HEADLINE_REFRESH_MS = 15 * 60 * 1000; // re-fetch every 15 min so the ticker drifts fresh without a full reload
+const HEADLINE_REFRESH_MS = 5 * 60 * 1000; // re-fetch every 5 min — this just re-reads our own API, not the upstream sources, so it's cheap to poll often and keeps the ticker as current as the backend's own data
 const TYPE_SPEED_MS = 24; // per character
 const READ_PAUSE_MS = 3200; // hold the finished line long enough to read it
 const VANISH_MS = 320; // fade-out duration before the next headline starts typing
@@ -29,16 +34,25 @@ function truncate(str, max) {
   return str.length > max ? `${str.slice(0, max - 1)}…` : str;
 }
 
-function timeAgo(iso) {
+// Just now (< 1 min) -> "just now".
+// Everything else -> the actual date it happened plus the actual clock
+// time, e.g. "Aug 1, 3:42 PM" (plus the year once it's from a previous
+// year) — the real date NVD/CISA/etc. list for it, not a "3h ago" counter
+// and not a time with the date silently dropped just because it's today.
+function formatFeedTime(iso) {
   if (!iso) return "";
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.round(diffMs / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
+  const d = new Date(iso);
+  const now = new Date();
+  if (now.getTime() - d.getTime() < 60000) return "just now";
+
+  const isThisYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleString(undefined, {
+    year: isThisYear ? undefined : "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 // Pulls the latest items from every tracked source — not just the news
@@ -46,13 +60,23 @@ function timeAgo(iso) {
 // whole picture (breaking news, fresh CISA advisories, newly published
 // CVEs, new KEV entries, and new ransomware postings), newest first.
 async function fetchTickerItems() {
-  const [news, advisories, cves, kev, ransomware] = await Promise.all([
+  // Promise.allSettled, not Promise.all: these 5 sources are independent,
+  // and the backend (Render free tier) occasionally times out or 5xxs on
+  // one of them without the others being affected. With Promise.all, a
+  // single failed source used to reject the whole batch and silently
+  // freeze the ticker on its last successful fetch — sometimes for hours.
+  // Settling individually means one flaky source just drops out for a
+  // cycle instead of blocking the other four from refreshing.
+  const results = await Promise.allSettled([
     api.news("?limit=6"),
     api.advisories("?limit=6"),
     api.cves("?limit=6"),
     api.kev("?limit=6"),
     api.ransomware("?limit=6"),
   ]);
+  const [news, advisories, cves, kev, ransomware] = results.map((r) =>
+    r.status === "fulfilled" ? r.value : []
+  );
 
   const items = [
     ...(news || []).map((n) => ({
@@ -108,6 +132,31 @@ export default function Hero() {
   const [index, setIndex] = useState(0);
   const [displayText, setDisplayText] = useState("");
   const [phase, setPhase] = useState("typing"); // "typing" | "pause" | "vanish"
+  const [mapLoading, setMapLoading] = useState(false);
+  const navigate = useNavigate();
+
+  // Prefetch the map's country data before navigating, instead of routing
+  // straight there and letting MapPage show its own empty-map flash while
+  // it fetches. The button spins in the meantime so the wait reads as
+  // "loading," not as a dead click — then MapPage mounts already populated.
+  const handleMapClick = async (e) => {
+    e.preventDefault();
+    if (mapLoading) return;
+    setMapLoading(true);
+    try {
+      const [countries] = await Promise.all([
+        api.byCountry(),
+        new Promise((resolve) => setTimeout(resolve, MAP_MIN_LOAD_MS)),
+      ]);
+      navigate("/map", { state: { prefetchedCountries: countries } });
+    } catch {
+      // Prefetch failed (e.g. backend cold-starting) — still let them
+      // through. MapPage does its own fetch and has its own error state.
+      navigate("/map");
+    } finally {
+      setMapLoading(false);
+    }
+  };
 
   // Load the combined, most-recent-first feed, then keep it fresh on an
   // interval — independent of the once-a-day full page reload, so the
@@ -240,7 +289,14 @@ export default function Hero() {
               )}
               <div className="hero-ticker-meta">
                 {current.source}
-                {current.timestamp && ` · ${timeAgo(current.timestamp)}`}
+                {current.timestamp && (
+                  <>
+                    {" · "}
+                    <span title={new Date(current.timestamp).toLocaleString()}>
+                      {formatFeedTime(current.timestamp)}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -250,9 +306,23 @@ export default function Hero() {
       </div>
 
       <div className="hero-cta-row">
-        <Link to="/map" className="hero-scroll-cue">
-          Global Threat Map <span className="arrow arrow-right">→</span>
-        </Link>
+        <a
+          href="/map"
+          className={`hero-scroll-cue ${mapLoading ? "is-loading" : ""}`}
+          onClick={handleMapClick}
+          aria-busy={mapLoading}
+        >
+          {mapLoading ? (
+            <>
+              <span className="hero-cue-spinner" aria-hidden="true" />
+              Loading map…
+            </>
+          ) : (
+            <>
+              Global Threat Map <span className="arrow arrow-right">→</span>
+            </>
+          )}
+        </a>
         <Link to="/about" className="hero-scroll-cue outline">
           About This Project
         </Link>

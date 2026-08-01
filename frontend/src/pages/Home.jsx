@@ -55,6 +55,11 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNote, setRefreshNote] = useState("");
+  // Transient "just finished" state so the button gives positive feedback
+  // (checkmark + green flash) instead of snapping straight from spinning
+  // back to idle, which read as if the click had done nothing.
+  const [justRefreshed, setJustRefreshed] = useState(false);
+  const justRefreshedTimer = useRef(null);
   const pollTimer = useRef(null);
   const tabsRef = useRef(null);
   // Tracks whether the swipeable mobile tab strip has more tabs hidden off
@@ -113,6 +118,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => () => clearTimeout(pollTimer.current), []);
+  useEffect(() => () => clearTimeout(justRefreshedTimer.current), []);
 
   const updateTabsOverflow = useCallback(() => {
     const el = tabsRef.current;
@@ -164,6 +170,10 @@ export default function Home() {
 
       await loadTabData(tab, search);
       setRefreshNote(updated ? "" : "Still finishing up in the background — check back in a bit.");
+      if (updated) {
+        setJustRefreshed(true);
+        justRefreshedTimer.current = setTimeout(() => setJustRefreshed(false), 1400);
+      }
     } catch (e) {
       setError("Refresh failed. Check the backend logs.");
       setRefreshNote("");
@@ -184,8 +194,30 @@ export default function Home() {
           {stats?.last_ingest_at && (
             <span className="last-updated">Data updated: {new Date(stats.last_ingest_at).toLocaleString()}</span>
           )}
-          <button className="refresh-btn" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? "Refreshing…" : "Refresh Now"}
+          <button
+            className={`refresh-btn ${refreshing ? "is-refreshing" : ""} ${justRefreshed ? "is-done" : ""}`}
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <svg
+              className="refresh-btn-icon"
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              {justRefreshed ? (
+                <polyline points="4 12 9 17 20 6" />
+              ) : (
+                <path d="M20 11.5A8 8 0 1 0 17.6 17M20 5v6.5h-6.5" />
+              )}
+            </svg>
+            <span>{refreshing ? "Refreshing…" : justRefreshed ? "Updated" : "Refresh Now"}</span>
           </button>
         </div>
       </div>

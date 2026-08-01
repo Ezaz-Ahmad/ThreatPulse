@@ -65,10 +65,26 @@ volume trends over time.
 - 🐳 **Containerized** — one `docker compose up` gets the full stack running
   locally, database included
 
-## Screenshot
+## Screenshots
 
-> _Add a screenshot or short GIF of the dashboard here — this is the first
-> thing recruiters look at._
+<p align="center">
+  <img src="docs/screenshots/hero.png" alt="ThreatPulse landing page with live typing threat ticker" width="100%" />
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/dashboard-overview.png" alt="Dashboard overview with summary stat cards" /></td>
+    <td width="50%"><img src="docs/screenshots/news-feed.png" alt="Aggregated news feed tab" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/analytics.png" alt="Analytics panel with severity, volume, and ransomware group charts" /></td>
+    <td width="50%"><img src="docs/screenshots/threat-map.png" alt="Global ransomware activity map" /></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/country-directory.png" alt="Country directory table with per-country incident breakdown" width="100%" />
+</p>
 
 ## Tech Stack
 

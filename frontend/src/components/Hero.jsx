@@ -1,4 +1,5 @@
 import HeroClock from "./HeroClock";
+import CreatorCredit from "./CreatorCredit";
 
 const BOOT_LINES = [
   { text: "Connected to 6 threat intelligence sources", tag: "OK" },
@@ -10,6 +11,8 @@ const BOOT_LINES = [
 export default function Hero() {
   return (
     <section className="hero">
+      <CreatorCredit variant="hero" />
+
       <div className="hero-eyebrow">
         <span className="pulse-dot" />
         Live Threat Intelligence
@@ -25,22 +28,24 @@ export default function Hero() {
         from real public sources.
       </p>
 
-      <div className="hero-terminal">
-        <div className="hero-terminal-bar">
-          <span></span><span></span><span></span>
-        </div>
-        {BOOT_LINES.map((line, i) => (
-          <div
-            key={line.text}
-            className="hero-terminal-line"
-            style={{ animationDelay: `${0.25 + i * 0.35}s` }}
-          >
-            <span className={line.tag === "OK" ? "tag-ok" : "tag-live"}>[{line.tag}]</span> {line.text}
+      <div className="hero-panels">
+        <div className="hero-terminal">
+          <div className="hero-terminal-bar">
+            <span></span><span></span><span></span>
           </div>
-        ))}
-      </div>
+          {BOOT_LINES.map((line, i) => (
+            <div
+              key={line.text}
+              className="hero-terminal-line"
+              style={{ animationDelay: `${0.25 + i * 0.35}s` }}
+            >
+              <span className={line.tag === "OK" ? "tag-ok" : "tag-live"}>[{line.tag}]</span> {line.text}
+            </div>
+          ))}
+        </div>
 
-      <HeroClock />
+        <HeroClock />
+      </div>
 
       <a href="#dashboard" className="hero-scroll-cue">
         View Live Dashboard <span className="arrow">↓</span>

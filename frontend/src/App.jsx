@@ -10,6 +10,7 @@ import RansomwareTable from "./components/RansomwareTable";
 import Hero from "./components/Hero";
 import SkeletonLoader from "./components/SkeletonLoader";
 import LiveClock from "./components/LiveClock";
+import CreatorCredit from "./components/CreatorCredit";
 const AnalyticsPanel = lazy(() => import("./components/AnalyticsPanel"));
 
 const TABS = [
@@ -182,10 +183,13 @@ export default function App() {
       )}
 
       <div className="footer-note">
-        Sources: The Hacker News, BleepingComputer, Krebs on Security, Dark Reading, SecurityWeek, The Record ·
-        CISA Advisories &amp; Known Exploited Vulnerabilities Catalog · NVD CVE feed · ransomware.live leak-site tracker.
-        Data auto-refreshes on a schedule set by the backend (default every 6 hours), and this page reloads itself
-        once every 24 hours to stay current if left open.
+        <div>
+          Sources: The Hacker News, BleepingComputer, Krebs on Security, Dark Reading, SecurityWeek, The Record ·
+          CISA Advisories &amp; Known Exploited Vulnerabilities Catalog · NVD CVE feed · ransomware.live leak-site tracker.
+          Data auto-refreshes on a schedule set by the backend (default every 6 hours), and this page reloads itself
+          once every 24 hours to stay current if left open.
+        </div>
+        <CreatorCredit variant="footer" />
       </div>
       </div>
     </>

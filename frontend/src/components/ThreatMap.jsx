@@ -32,9 +32,14 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
   const [loadError, setLoadError] = useState(null);
   const [hover, setHover] = useState(null); // { code, name, count, topGroup, topSector, clientX, clientY }
   const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
   const svgRef = useRef(null);
   const wrapRef = useRef(null);
   const dragRef = useRef(null);
+  // Which country's path the pointer went down on, so pointerup can decide
+  // "was this a click or the end of a drag" without depending on the
+  // browser's native click event — see handlePointerUp for why.
+  const pressedRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,6 +106,7 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
 
   const handlePointerDown = useCallback((e) => {
     dragRef.current = { startX: e.clientX, startY: e.clientY, origX: view.x, origY: view.y, moved: false };
+    setIsDragging(true);
     e.currentTarget.setPointerCapture?.(e.pointerId);
   }, [view.x, view.y]);
 
@@ -113,9 +119,26 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
     setView((v) => ({ ...v, x: dragRef.current.origX + dx, y: dragRef.current.origY + dy }));
   }, []);
 
+  // Selection is decided here rather than via a native onClick on each
+  // <path>. setPointerCapture() above (needed so dragging the map still
+  // works smoothly once the pointer leaves the country you started on)
+  // makes the browser retarget the follow-up pointer/mouse events — and the
+  // synthetic "click" that derives from them — to the capturing <svg>
+  // instead of the country path the user actually pressed. That silently
+  // ate every click. Tracking "which country was pressed" + "did the
+  // pointer move enough to count as a drag" ourselves sidesteps that
+  // entirely and works the same across mouse, touch, and pen.
   const handlePointerUp = useCallback(() => {
+    const drag = dragRef.current;
+    const code = pressedRef.current;
+    if (drag && !drag.moved && code) {
+      const entry = byAlpha2.get(code);
+      if (entry) onSelectCountry(code === selected ? null : code);
+    }
+    pressedRef.current = null;
     dragRef.current = null;
-  }, []);
+    setIsDragging(false);
+  }, [byAlpha2, onSelectCountry, selected]);
 
   const resetView = () => setView({ scale: 1, x: 0, y: 0 });
 
@@ -149,7 +172,10 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
         role="img"
         aria-label="World map showing ransomware incident activity by country"
       >
-        <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
+        <g
+          transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}
+          style={{ transition: isDragging ? "none" : "transform 0.2s var(--ease-out)" }}
+        >
           {!geo && (
             <text x={WIDTH / 2} y={HEIGHT / 2} textAnchor="middle" className="threat-map-loading-text">
               Loading map…
@@ -171,7 +197,27 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
                 style={entry ? { "--intensity": intensity } : undefined}
                 onMouseMove={(e) => (entry ? showHoverFor(code, entry, e) : setHover(null))}
                 onMouseLeave={() => setHover(null)}
-                onClick={() => entry && onSelectCountry(code === selected ? null : code)}
+                onPointerDown={() => {
+                  pressedRef.current = entry ? code : null;
+                }}
+                tabIndex={entry ? 0 : -1}
+                role={entry ? "button" : undefined}
+                aria-label={entry ? `${regionName(code) || code}: ${entry.count} incidents` : undefined}
+                onFocus={(e) => {
+                  if (!entry) return;
+                  // FocusEvent has no clientX/clientY — anchor the tooltip
+                  // to the focused shape's own bounding box instead.
+                  const rect = e.target.getBoundingClientRect();
+                  showHoverFor(code, entry, { clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 });
+                }}
+                onBlur={() => setHover(null)}
+                onKeyDown={(e) => {
+                  if (!entry) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelectCountry(code === selected ? null : code);
+                  }
+                }}
               />
             );
           })}

@@ -8,6 +8,9 @@ export default function ShowMoreControl({
   onShowMore,
   onShowAll,
   onReset,
+  pending = false,
+  pendingMore = pending,
+  pendingAll = pending,
 }) {
   if (!hasMore && !canCollapse) return null;
   const pct = total ? Math.round((shown / total) * 100) : 0;
@@ -19,22 +22,36 @@ export default function ShowMoreControl({
       </div>
       <div className="show-more-row">
         <span className="show-more-status">
-          {hasMore ? `Showing ${shown} of ${total}` : `Showing all ${total}`}
+          {pending ? (
+            <>
+              <span className="spinner" /> Loading…
+            </>
+          ) : hasMore ? (
+            `Showing ${shown} of ${total}`
+          ) : (
+            `Showing all ${total}`
+          )}
         </span>
         <div className="show-more-actions">
           {hasMore && (
-            <button type="button" className="show-more-btn" onClick={onShowMore}>
-              Show {Math.min(step, remaining)} More
-              <span className="show-more-badge">{remaining} left</span>
+            <button type="button" className="show-more-btn" disabled={pending} onClick={onShowMore}>
+              {pendingMore ? (
+                <span className="spinner" />
+              ) : (
+                <>
+                  Show {Math.min(step, remaining)} More
+                  <span className="show-more-badge">{remaining} left</span>
+                </>
+              )}
             </button>
           )}
           {hasMore && (
-            <button type="button" className="show-more-all" onClick={onShowAll}>
-              Show all
+            <button type="button" className="show-more-all" disabled={pending} onClick={onShowAll}>
+              {pendingAll ? <span className="spinner" /> : "Show all"}
             </button>
           )}
           {canCollapse && (
-            <button type="button" className="show-more-all" onClick={onReset}>
+            <button type="button" className="show-more-all" disabled={pending} onClick={onReset}>
               Show less
             </button>
           )}

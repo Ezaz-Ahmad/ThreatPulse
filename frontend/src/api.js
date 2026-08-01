@@ -13,6 +13,7 @@ export const api = {
   cves: (params = "") => get(`/api/cves${params}`),
   kev: (params = "") => get(`/api/kev${params}`),
   ransomware: (params = "") => get(`/api/ransomware${params}`),
+  ransomwareCount: (params = "") => get(`/api/ransomware/count${params}`),
   refresh: async () => {
     const res = await fetch(`${API_BASE}/api/refresh`, { method: "POST" });
     if (!res.ok) throw new Error(`Refresh failed: ${res.status}`);

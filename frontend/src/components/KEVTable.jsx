@@ -62,7 +62,7 @@ export default function KEVTable({ items }) {
     return items.filter((k) => vendorLabel(k) === active);
   }, [items, active]);
 
-  const { visible, shown, total, remaining, hasMore, canCollapse, showMore, showAll, reset } = useShowMore(filtered, 10, 10);
+  const { visible, shown, total, remaining, hasMore, canCollapse, pending, pendingMore, pendingAll, showMore, showAll, reset } = useShowMore(filtered, 10, 10);
 
   if (!items?.length) return <div className="empty-state">No KEV entries yet. Try refreshing.</div>;
 
@@ -130,6 +130,9 @@ export default function KEVTable({ items }) {
         remaining={remaining}
         hasMore={hasMore}
         canCollapse={canCollapse}
+        pending={pending}
+        pendingMore={pendingMore}
+        pendingAll={pendingAll}
         step={10}
         onShowMore={showMore}
         onShowAll={showAll}

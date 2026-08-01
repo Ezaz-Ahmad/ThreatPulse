@@ -41,7 +41,7 @@ export default function CountryDirectory({ data, selected, onSelectCountry }) {
     return merged.filter((c) => c.name.toLowerCase().includes(q));
   }, [merged, search]);
 
-  const { visible, shown, total, remaining, hasMore, canCollapse, showMore, showAll, reset } =
+  const { visible, shown, total, remaining, hasMore, canCollapse, pending, pendingMore, pendingAll, showMore, showAll, reset } =
     useShowMore(filtered, 15, 15);
 
   const withData = useMemo(() => merged.filter((c) => c.count > 0).length, [merged]);
@@ -70,11 +70,12 @@ export default function CountryDirectory({ data, selected, onSelectCountry }) {
           <span>Most active group</span>
           <span>Top sector</span>
         </div>
-        {visible.map((c) => (
+        {visible.map((c, i) => (
           <button
             type="button"
             key={c.country}
             className={`country-directory-row ${selected === c.country ? "active" : ""} ${c.count === 0 ? "is-empty" : ""}`}
+            style={{ animationDelay: `${(i % 15) * 25}ms` }}
             onClick={() => onSelectCountry(c.country === selected ? null : c.country)}
           >
             <span className="country-directory-name">{c.name}</span>
@@ -99,6 +100,9 @@ export default function CountryDirectory({ data, selected, onSelectCountry }) {
           remaining={remaining}
           hasMore={hasMore}
           canCollapse={canCollapse}
+          pending={pending}
+          pendingMore={pendingMore}
+          pendingAll={pendingAll}
           step={15}
           onShowMore={showMore}
           onShowAll={showAll}

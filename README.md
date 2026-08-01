@@ -188,7 +188,7 @@ Set `DATABASE_URL` (Render) to your Neon connection string, and
 
 **Ezaz Ahmad**
 GitHub: [@Ezaz-Ahmad](https://github.com/Ezaz-Ahmad)
-_Add your LinkedIn / portfolio link here._
+
 
 ## License
 

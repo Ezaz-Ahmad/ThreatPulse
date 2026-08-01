@@ -47,12 +47,19 @@ volume trends over time.
   ransomware association
 - 🧬 **CVE tracking** — recent vulnerabilities from the NVD API with CVSS
   score and severity
-- 🔓 **Ransomware tracker** — recent leak-site victim postings
+- 🔓 **Ransomware tracker** — recent leak-site victim postings, searchable
+  and paginated rather than dumped as one long list
+- 🗺️ **Global threat map** — ransomware activity plotted by country, with
+  drill-down into each country's most active group, top targeted sector,
+  and recent incidents
 - 📊 **Built-in analytics** — news volume, severity distribution, top
   ransomware groups, most-targeted sectors, KEV timeline — charted, not just
   listed
-- ⏱️ **Self-updating** — background scheduler refreshes every source on a
-  configurable interval, plus a manual "Refresh Now" button
+- ⏱️ **Self-updating** — background scheduler refreshes every source hourly,
+  plus a manual "Refresh Now" button with live progress feedback
+- 📡 **Live ticker** — the newest item across all five sources, typed out in
+  real time on the landing page, so the dashboard reads as alive rather than
+  static
 - ✅ **Tested** — 20+ automated tests (ingestion parsing + API layer), CI
   runs on every push
 - 🐳 **Containerized** — one `docker compose up` gets the full stack running
@@ -68,7 +75,7 @@ volume trends over time.
 | Layer | Technology |
 |---|---|
 | Backend | FastAPI, SQLAlchemy, APScheduler |
-| Frontend | React, Vite, Recharts |
+| Frontend | React 19, React Router, Vite, Recharts, d3-geo + topojson (threat map) |
 | Database | PostgreSQL (production) / SQLite (local dev) |
 | Testing | Pytest, FastAPI TestClient |
 | CI/CD | GitHub Actions |
@@ -89,6 +96,11 @@ frontend/   React + Vite + Recharts               -> dashboard UI
   ID/etc.), so re-running it never creates duplicates.
 - **Database-agnostic:** SQLite locally, Postgres in production — switched
   with a single `DATABASE_URL` environment variable, no code changes.
+- **Resilient client-side aggregation:** the live ticker combines five
+  independent API calls (news, advisories, CVEs, KEV, ransomware). Those are
+  settled individually (`Promise.allSettled`, not `Promise.all`) so one slow
+  or failing source — common on a free-tier host waking from cold — can't
+  silently freeze the other four from updating.
 
 ## Quick Start
 
@@ -163,7 +175,7 @@ not just because it was free:
 | **[Neon](https://neon.tech)** | Managed PostgreSQL | Render's free-tier filesystem is wiped on every restart/redeploy, so a local SQLite file would lose all collected data. Neon decouples the database from the app server entirely, has a genuinely permanent free tier (not a trial), and scales to zero when idle — so it costs nothing while the project sits quiet. |
 | **[Render](https://render.com)** | Backend hosting (FastAPI, Dockerized) | Builds straight from the repo's own `Dockerfile` with no extra config, and — unlike most serverless platforms — supports a long-running background process, which the APScheduler ingestion job needs. |
 | **[Vercel](https://vercel.com)** | Frontend hosting (React/Vite) | Serves the static build from a global CDN edge, so the dashboard itself loads fast for anyone, anywhere, independent of where the backend is running. Zero-config deploys for Vite projects, auto-redeploys on every push. |
-| **GitHub Actions** | CI/CD + scheduled refresh | Runs the full test suite on every push before anything reaches production, and a separate scheduled workflow (`scheduled-refresh.yml`) pings the live backend every 6 hours — keeping data current and reducing how often Render's free tier goes fully cold. |
+| **GitHub Actions** | CI/CD + scheduled refresh | Runs the full test suite on every push before anything reaches production, and a separate scheduled workflow (`scheduled-refresh.yml`) pings the live backend hourly — keeping data current and reducing how often Render's free tier goes fully cold. |
 
 Wiring between them is two environment variables: `DATABASE_URL` on Render
 (set to the Neon connection string) and `VITE_API_BASE` on Vercel (set to the
@@ -177,20 +189,21 @@ Render backend URL).
 | `GET /api/advisories` | CISA advisories (`?search=`, `?limit=`) |
 | `GET /api/cves` | Recent CVEs (`?search=`, `?min_score=`, `?limit=`) |
 | `GET /api/kev` | KEV catalog (`?search=`, `?ransomware_only=`, `?limit=`) |
-| `GET /api/ransomware` | Ransomware victims (`?group=`, `?limit=`) |
+| `GET /api/ransomware` | Ransomware victims (`?group=`, `?country=`, `?search=`, `?limit=`) |
+| `GET /api/ransomware/count` | Total matching ransomware victims, ignoring `limit` — powers "X of Y" pagination |
 | `GET /api/stats` | Summary counts for the dashboard header |
 | `GET /api/analytics/news-volume` | Daily news counts (`?days=`) |
 | `GET /api/analytics/severity-distribution` | CVE counts by severity |
 | `GET /api/analytics/top-ransomware-groups` | Top groups by victim count (`?limit=`, `?days=`) |
 | `GET /api/analytics/top-sectors` | Top targeted sectors (`?limit=`, `?days=`) |
 | `GET /api/analytics/kev-timeline` | Daily KEV catalog additions (`?days=`) |
+| `GET /api/analytics/by-country` | Ransomware incident counts by country, with top group/sector per country — powers the threat map |
 | `POST /api/refresh` | Trigger an immediate ingestion run |
 
 ## Roadmap
 
 - [ ] User accounts + saved watchlists (track specific vendors/CVEs/groups)
 - [ ] Live alerts via Slack/Discord/email on critical CVEs or new KEV entries
-- [ ] Interactive world map of ransomware activity by country
 - [ ] Historical trend comparisons (week-over-week, month-over-month)
 
 ## Notes on data source reliability

@@ -206,7 +206,7 @@ Render backend URL).
 
 **Ezaz Ahmad**
 GitHub: [@Ezaz-Ahmad](https://github.com/Ezaz-Ahmad)
-_Add your LinkedIn / portfolio link here._
+
 
 ## License
 

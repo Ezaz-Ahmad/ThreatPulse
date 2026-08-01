@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import HeroClock from "./HeroClock";
 import CreatorCredit from "./CreatorCredit";
 
@@ -47,9 +48,14 @@ export default function Hero() {
         <HeroClock />
       </div>
 
-      <a href="#dashboard" className="hero-scroll-cue">
-        View Live Dashboard <span className="arrow">↓</span>
-      </a>
+      <div className="hero-cta-row">
+        <Link to="/about" className="hero-scroll-cue">
+          About This Project <span className="arrow arrow-right">→</span>
+        </Link>
+        <a href="#dashboard" className="hero-scroll-cue outline">
+          Skip to Dashboard
+        </a>
+      </div>
     </section>
   );
 }

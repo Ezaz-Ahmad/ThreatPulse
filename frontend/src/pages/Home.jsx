@@ -56,6 +56,12 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNote, setRefreshNote] = useState("");
   const pollTimer = useRef(null);
+  const tabsRef = useRef(null);
+  // Tracks whether the swipeable mobile tab strip has more tabs hidden off
+  // to the left/right, so we can show a fade + arrow hint. Without this,
+  // "Recent CVEs" looked like the last tab on a phone even though KEV
+  // Catalog, Ransomware Tracker, and Analytics were just off-screen.
+  const [tabsOverflow, setTabsOverflow] = useState({ left: false, right: false });
 
   const loadStats = useCallback(async () => {
     try {
@@ -107,6 +113,24 @@ export default function Home() {
   }, []);
 
   useEffect(() => () => clearTimeout(pollTimer.current), []);
+
+  const updateTabsOverflow = useCallback(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setTabsOverflow({
+      left: el.scrollLeft > 4,
+      right: el.scrollLeft < maxScroll - 4,
+    });
+  }, []);
+
+  // Re-check after the tab list first paints, and again if the viewport
+  // (or device rotation) changes whether the strip overflows at all.
+  useEffect(() => {
+    updateTabsOverflow();
+    window.addEventListener("resize", updateTabsOverflow);
+    return () => window.removeEventListener("resize", updateTabsOverflow);
+  }, [updateTabsOverflow]);
 
   const handleStatSelect = (key) => {
     setTab(key);
@@ -170,16 +194,22 @@ export default function Home() {
 
       <StatCards stats={stats} onSelectTab={handleStatSelect} />
 
-      <div className="tabs" id="data-tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            className={`tab ${tab === t.key ? "active" : ""}`}
-            onClick={() => { setTab(t.key); setSearch(""); }}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="tabs-wrap" id="data-tabs">
+        <div className="tabs" ref={tabsRef} onScroll={updateTabsOverflow}>
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              className={`tab ${tab === t.key ? "active" : ""}`}
+              onClick={() => { setTab(t.key); setSearch(""); }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className={`tabs-fade tabs-fade-left ${tabsOverflow.left ? "" : "is-hidden"}`} aria-hidden="true" />
+        <div className={`tabs-fade tabs-fade-right ${tabsOverflow.right ? "" : "is-hidden"}`} aria-hidden="true">
+          <span className="tabs-fade-arrow">&rsaquo;</span>
+        </div>
       </div>
 
       {tab !== "analytics" && TAB_DESCRIPTIONS[tab] && (

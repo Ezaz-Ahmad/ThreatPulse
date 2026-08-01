@@ -837,12 +837,64 @@ body {
 
 /* ---------------- Tabs ---------------- */
 
+.tabs-wrap {
+  position: relative;
+  margin-bottom: 18px;
+}
+
 .tabs {
   display: flex;
   gap: 4px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 18px;
   flex-wrap: wrap;
+}
+
+/* Fade + arrow hint that appears over the edges of the swipeable mobile
+   tab strip whenever there are more tabs scrolled out of view. Hidden by
+   default (desktop's .tabs wraps instead of scrolling, so there's nothing
+   to hint at); enabled inside the mobile media query below. Visibility of
+   each edge is then driven live off scroll position via Home.jsx. */
+.tabs-fade {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+  align-items: center;
+}
+
+.tabs-fade.is-hidden {
+  opacity: 0;
+}
+
+.tabs-fade-left {
+  left: 0;
+  justify-content: flex-start;
+  background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
+}
+
+.tabs-fade-right {
+  right: 0;
+  justify-content: flex-end;
+  background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
+}
+
+.tabs-fade-arrow {
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 2px 3px 0;
+  animation: tabs-fade-nudge 1.6s ease-in-out infinite;
+}
+
+@keyframes tabs-fade-nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
 }
 
 .tab {
@@ -889,6 +941,9 @@ body {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+  }
+  .tabs-fade {
+    display: flex;
   }
   .tabs::-webkit-scrollbar { display: none; }
   .tab {

@@ -67,35 +67,38 @@ volume trends over time.
 
 ## Screenshots
 
-<p align="center">
-  <img src="docs/screenshots/country-directory.png" alt="Country directory table with per-country incident breakdown" width="100%" /><br/>
-  <sub>Country directory — most-affected countries, searchable, with group and sector breakdown</sub>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/threat-map.png" alt="Global ransomware activity map" width="100%" /><br/>
-  <sub>Global threat map — ransomware activity plotted by country</sub>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/analytics.png" alt="Analytics panel with severity, volume, and ransomware group charts" width="100%" /><br/>
-  <sub>Analytics — news volume, CVE severity, top ransomware groups, most-targeted sectors</sub>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/news-feed.png" alt="Aggregated news feed tab" width="100%" /><br/>
-  <sub>News feed — aggregated across six sources, searchable and filterable</sub>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/dashboard-overview.png" alt="Dashboard overview with summary stat cards" width="100%" /><br/>
-  <sub>Dashboard overview — live stat cards for every tracked source</sub>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/hero.png" alt="ThreatPulse landing page with live typing threat ticker" width="100%" /><br/>
-  <sub>Landing page — live typing threat ticker</sub>
-</p>
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <a href="docs/screenshots/country-directory.png"><img src="docs/screenshots/country-directory.png" alt="Country directory table with per-country incident breakdown" width="100%" /></a><br/>
+      <sub>Country directory — searchable, with group and sector breakdown</sub>
+    </td>
+    <td width="50%" align="center">
+      <a href="docs/screenshots/threat-map.png"><img src="docs/screenshots/threat-map.png" alt="Global ransomware activity map" width="100%" /></a><br/>
+      <sub>Global threat map — ransomware activity plotted by country</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <a href="docs/screenshots/analytics.png"><img src="docs/screenshots/analytics.png" alt="Analytics panel with severity, volume, and ransomware group charts" width="100%" /></a><br/>
+      <sub>Analytics — volume, severity, top groups, most-targeted sectors</sub>
+    </td>
+    <td width="50%" align="center">
+      <a href="docs/screenshots/news-feed.png"><img src="docs/screenshots/news-feed.png" alt="Aggregated news feed tab" width="100%" /></a><br/>
+      <sub>News feed — six sources, searchable and filterable</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <a href="docs/screenshots/dashboard-overview.png"><img src="docs/screenshots/dashboard-overview.png" alt="Dashboard overview with summary stat cards" width="100%" /></a><br/>
+      <sub>Dashboard overview — live stat cards for every tracked source</sub>
+    </td>
+    <td width="50%" align="center">
+      <a href="docs/screenshots/hero.png"><img src="docs/screenshots/hero.png" alt="ThreatPulse landing page with live typing threat ticker" width="100%" /></a><br/>
+      <sub>Landing page — live typing threat ticker</sub>
+    </td>
+  </tr>
+</table>
 
 ## Tech Stack
 

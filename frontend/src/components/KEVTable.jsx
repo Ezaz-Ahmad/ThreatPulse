@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useShowMore } from "../hooks/useShowMore";
+import ShowMoreControl from "./ShowMoreControl";
 
 function daysUntil(dateStr) {
   if (!dateStr) return null;
@@ -31,6 +33,8 @@ export default function KEVTable({ items }) {
     return ransomwareOnly ? items.filter((k) => k.known_ransomware_use === "Known") : items;
   }, [items, ransomwareOnly]);
 
+  const { visible, shown, total, remaining, hasMore, showMore, showAll } = useShowMore(filtered, 10, 10);
+
   if (!items?.length) return <div className="empty-state">No KEV entries yet. Try refreshing.</div>;
 
   return (
@@ -50,7 +54,7 @@ export default function KEVTable({ items }) {
       </div>
 
       <div className="card-list">
-        {filtered.map((k, i) => {
+        {visible.map((k, i) => {
           const isRansomware = k.known_ransomware_use === "Known";
           return (
             <div
@@ -74,6 +78,16 @@ export default function KEVTable({ items }) {
           );
         })}
       </div>
+
+      <ShowMoreControl
+        shown={shown}
+        total={total}
+        remaining={remaining}
+        hasMore={hasMore}
+        step={10}
+        onShowMore={showMore}
+        onShowAll={showAll}
+      />
     </div>
   );
 }

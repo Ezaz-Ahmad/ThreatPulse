@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../App.css";
 import CreatorCredit from "../components/CreatorCredit";
+import ScrollButtons from "../components/ScrollButtons";
 
 const FEATURES = [
   {
@@ -137,6 +138,7 @@ export default function AboutPage() {
           <CreatorCredit variant="footer" />
         </div>
       </div>
+      <ScrollButtons />
     </>
   );
 }

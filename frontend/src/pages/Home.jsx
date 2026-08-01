@@ -11,6 +11,7 @@ import Hero from "../components/Hero";
 import SkeletonLoader from "../components/SkeletonLoader";
 import LiveClock from "../components/LiveClock";
 import CreatorCredit from "../components/CreatorCredit";
+import ScrollButtons from "../components/ScrollButtons";
 const AnalyticsPanel = lazy(() => import("../components/AnalyticsPanel"));
 
 const TABS = [
@@ -204,6 +205,7 @@ export default function Home() {
         <CreatorCredit variant="footer" />
       </div>
       </div>
+      <ScrollButtons />
     </>
   );
 }

@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useShowMore } from "../hooks/useShowMore";
+import ShowMoreControl from "./ShowMoreControl";
 
 const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"];
 const SEVERITY_META = {
@@ -60,6 +62,8 @@ export default function CVETable({ items }) {
     return items.filter((item) => severityKey(item.severity) === filter);
   }, [items, filter]);
 
+  const { visible, shown, total, remaining, hasMore, showMore, showAll } = useShowMore(filtered, 10, 10);
+
   if (!items?.length) return <div className="empty-state">No CVEs yet. Try refreshing.</div>;
 
   return (
@@ -82,7 +86,7 @@ export default function CVETable({ items }) {
       </div>
 
       <div className="card-list">
-        {filtered.map((c, i) => {
+        {visible.map((c, i) => {
           const key = severityKey(c.severity);
           const meta = SEVERITY_META[key];
           return (
@@ -104,6 +108,16 @@ export default function CVETable({ items }) {
           );
         })}
       </div>
+
+      <ShowMoreControl
+        shown={shown}
+        total={total}
+        remaining={remaining}
+        hasMore={hasMore}
+        step={10}
+        onShowMore={showMore}
+        onShowAll={showAll}
+      />
     </div>
   );
 }

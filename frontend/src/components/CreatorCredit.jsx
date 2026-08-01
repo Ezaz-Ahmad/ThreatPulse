@@ -24,18 +24,25 @@ const ICONS = {
 };
 
 export default function CreatorCredit({ variant = "footer" }) {
+  // Read fresh on every render rather than hardcoding — this is what keeps
+  // the copyright year correct without ever needing a manual edit.
+  const year = new Date().getFullYear();
+
   return (
     <div className={`creator-credit ${variant}`}>
-      <span className="creator-credit-label">
-        Built by <strong>Ezaz Ahmad</strong>
-      </span>
-      <span className="creator-credit-links">
-        {LINKS.map((l) => (
-          <a key={l.label} href={l.href} target="_blank" rel="noreferrer" title={l.label} aria-label={l.label}>
-            {ICONS[l.icon]}
-          </a>
-        ))}
-      </span>
+      <div className="creator-credit-row">
+        <span className="creator-credit-label">
+          Built by <strong>Ezaz Ahmad</strong>
+        </span>
+        <span className="creator-credit-links">
+          {LINKS.map((l) => (
+            <a key={l.label} href={l.href} target="_blank" rel="noreferrer" title={l.label} aria-label={l.label}>
+              {ICONS[l.icon]}
+            </a>
+          ))}
+        </span>
+      </div>
+      <span className="creator-credit-copyright">&copy; {year} Ezaz Ahmad. All rights reserved.</span>
     </div>
   );
 }

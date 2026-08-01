@@ -63,7 +63,6 @@ export default function AboutPage() {
           <Link to="/" className="back-link">
             <span className="arrow-left">←</span> Back to ThreatPulse
           </Link>
-          <CreatorCredit variant="hero" />
         </div>
 
         <section className="about about-standalone in-view">

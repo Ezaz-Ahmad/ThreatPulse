@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import HeroClock from "./HeroClock";
-import CreatorCredit from "./CreatorCredit";
 import { api } from "../api";
 
 const BOOT_LINES = [
@@ -177,8 +176,6 @@ export default function Hero() {
 
   return (
     <section className="hero">
-      <CreatorCredit variant="hero" />
-
       <div className="hero-eyebrow">
         <span className="pulse-dot" />
         Live Threat Intelligence

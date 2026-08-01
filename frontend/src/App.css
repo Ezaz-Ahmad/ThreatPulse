@@ -1586,6 +1586,12 @@ table.data-table tr:last-child td { border-bottom: none; }
   color: var(--text);
 }
 
+.creator-credit-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .creator-credit-links {
   display: inline-flex;
   gap: 10px;
@@ -1602,29 +1608,22 @@ table.data-table tr:last-child td { border-bottom: none; }
   transform: translateY(-2px);
 }
 
-.creator-credit.hero {
-  position: absolute;
-  top: 22px;
-  right: 22px;
-  border: 1px solid var(--border-bright);
-  background: rgba(10, 16, 22, 0.65);
-  padding: 7px 14px;
-  border-radius: 999px;
-  backdrop-filter: blur(6px);
-  z-index: 2;
-}
-
+/* Credit now only ever renders in the footer of each page — stacked
+   "Built by ..." row above a smaller, dimmer copyright line whose year
+   is computed at render time (see CreatorCredit.jsx), so it never goes
+   stale. */
 .creator-credit.footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   margin-top: 14px;
 }
 
-@media (max-width: 680px) {
-  .creator-credit.hero {
-    position: static;
-    display: inline-flex;
-    margin: 0 auto 24px;
-  }
-  .hero { text-align: center; }
+.creator-credit-copyright {
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.7;
 }
 
 /* ---------------- Standalone About page ---------------- */

@@ -7,6 +7,8 @@ import SeverityBar from "./viz/SeverityBar";
 import RadialProgress from "./viz/RadialProgress";
 import MiniRankList from "./viz/MiniRankList";
 import { NewsIcon, ShieldIcon, BugIcon, AlertTriangleIcon, ZapIcon, TargetIcon } from "./icons";
+import HelpTip from "./HelpTip";
+import { GLOSSARY } from "../data/glossary";
 
 const TAB_LABEL = {
   news: "News Feed",
@@ -56,6 +58,7 @@ export default function StatCards({ stats, onSelectTab }) {
       value: stats.total_news,
       icon: <NewsIcon />,
       accent: "var(--accent)",
+      hint: "Cybersecurity headlines collected automatically from six trusted outlets — a quick pulse on what's happening in the industry right now.",
       trend: stats.news_last_7_days ? `+${stats.news_last_7_days} this week` : null,
       inlineViz: viz.newsVolume.length > 1 ? <Sparkline data={viz.newsVolume} color="var(--accent)" /> : null,
     },
@@ -65,6 +68,7 @@ export default function StatCards({ stats, onSelectTab }) {
       value: stats.total_advisories,
       icon: <ShieldIcon />,
       accent: "var(--accent-2)",
+      hint: GLOSSARY.cisa.definition,
       footerNote: (
         <span className="stat-live-dot">
           <span className="pulse-dot" /> Official CISA feed
@@ -77,6 +81,7 @@ export default function StatCards({ stats, onSelectTab }) {
       value: stats.total_cves,
       icon: <BugIcon />,
       accent: "var(--warn)",
+      hint: GLOSSARY.cve.definition,
       wideViz: viz.severity.length ? <SeverityBar data={viz.severity} /> : null,
     },
     {
@@ -85,6 +90,7 @@ export default function StatCards({ stats, onSelectTab }) {
       value: stats.total_kev,
       icon: <AlertTriangleIcon />,
       accent: "#e8d96a",
+      hint: GLOSSARY.kev.definition,
       trend: "Actively exploited",
       inlineViz: viz.kevTimeline.length > 1 ? <Sparkline data={viz.kevTimeline} color="#e8d96a" /> : null,
     },
@@ -94,6 +100,7 @@ export default function StatCards({ stats, onSelectTab }) {
       value: stats.kev_ransomware_flagged,
       icon: <ZapIcon />,
       accent: "var(--danger)",
+      hint: "The share of the KEV catalog that's specifically known to be exploited by ransomware gangs — these deserve extra urgency since a breach can end in extortion, not just data theft.",
       trend: stats.total_kev ? `${Math.round(kevPct)}% of catalog` : null,
       inlineViz: stats.total_kev ? <RadialProgress pct={kevPct} color="var(--danger)" /> : null,
     },
@@ -103,6 +110,7 @@ export default function StatCards({ stats, onSelectTab }) {
       value: stats.total_ransomware,
       icon: <TargetIcon />,
       accent: "var(--danger)",
+      hint: GLOSSARY.ransomware.definition,
       trend: stats.ransomware_last_7_days ? `+${stats.ransomware_last_7_days} this week` : null,
       wideViz: viz.topGroups.length ? (
         <MiniRankList items={viz.topGroups} labelKey="group_name" countKey="count" color="var(--danger)" />
@@ -125,7 +133,10 @@ export default function StatCards({ stats, onSelectTab }) {
             {c.inlineViz && <div className="stat-viz">{c.inlineViz}</div>}
           </div>
           <div className="value"><AnimatedValue value={c.value} active={inView} /></div>
-          <div className="label">{c.label}</div>
+          <div className="label">
+            {c.label}
+            {c.hint && <HelpTip title={c.label}>{c.hint}</HelpTip>}
+          </div>
           {c.wideViz && <div className="stat-viz-wide">{c.wideViz}</div>}
           <div className="stat-card-footer">
             <span className="stat-trend">{c.footerNote || c.trend || ""}</span>

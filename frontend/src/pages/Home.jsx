@@ -12,6 +12,7 @@ import SkeletonLoader from "../components/SkeletonLoader";
 import LiveClock from "../components/LiveClock";
 import CreatorCredit from "../components/CreatorCredit";
 import ScrollButtons from "../components/ScrollButtons";
+import TermHints from "../components/TermHints";
 const AnalyticsPanel = lazy(() => import("../components/AnalyticsPanel"));
 
 const TABS = [
@@ -29,6 +30,16 @@ const TAB_DESCRIPTIONS = {
   cves: "Newly published or updated vulnerabilities from the National Vulnerability Database, sorted by severity so the most urgent issues stand out first.",
   kev: "CISA's Known Exploited Vulnerabilities catalog — flaws confirmed to be under active attack, which is what makes them the highest priority to patch.",
   ransomware: "Recent victim postings pulled from ransomware group leak sites, tracked via ransomware.live.",
+};
+
+// Which glossary terms to surface as hint chips under each tab's
+// description — only for tabs that actually use jargon a non-expert
+// wouldn't know. Keys match entries in src/data/glossary.js.
+const TAB_TERMS = {
+  advisories: ["cisa"],
+  cves: ["cve", "cvss", "severity", "nvd"],
+  kev: ["kev", "cisa", "dueDate"],
+  ransomware: ["ransomware"],
 };
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -174,6 +185,7 @@ export default function Home() {
       {tab !== "analytics" && TAB_DESCRIPTIONS[tab] && (
         <p className="tab-description">{TAB_DESCRIPTIONS[tab]}</p>
       )}
+      {tab !== "analytics" && <TermHints terms={TAB_TERMS[tab]} />}
 
       {tab !== "ransomware" && tab !== "analytics" && (
         <div className="toolbar">

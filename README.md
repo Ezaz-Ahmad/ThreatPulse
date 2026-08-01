@@ -36,7 +36,7 @@ volume trends over time.
 
 ## Live Demo
 
-> 🔗 _Add your deployed URL here once hosted (see [Deployment](#deployment))._
+**🔗 [threat-pulse-phi.vercel.app](https://threat-pulse-phi.vercel.app)**
 
 ## Key Features
 

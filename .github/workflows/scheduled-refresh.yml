@@ -1,0 +1,28 @@
+name: Scheduled data refresh
+
+# Pings the deployed backend's /api/refresh endpoint on a schedule. This is a
+# belt-and-suspenders complement to the backend's own in-process APScheduler
+# job - useful because free-tier hosts (e.g. Render's free plan) spin the
+# service down after inactivity, so a scheduled external ping both keeps data
+# fresh and wakes the service back up.
+#
+# Setup: add a repository variable (Settings > Secrets and variables > Actions
+# > Variables) named BACKEND_URL set to your deployed backend's base URL,
+# e.g. https://your-app.onrender.com
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"  # every 6 hours
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger backend refresh
+        run: |
+          if [ -z "${{ vars.BACKEND_URL }}" ]; then
+            echo "BACKEND_URL repository variable is not set - skipping. See workflow comments for setup."
+            exit 0
+          fi
+          curl -f -X POST "${{ vars.BACKEND_URL }}/api/refresh" --max-time 120

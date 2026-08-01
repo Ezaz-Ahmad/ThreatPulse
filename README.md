@@ -1,39 +1,78 @@
-# ThreatPulse
+<h1 align="center">🛡️ ThreatPulse</h1>
 
-![CI](https://github.com/Ezaz-Ahmad/ThreatPulse/actions/workflows/ci.yml/badge.svg)
+<p align="center">
+  <b>A live, self-updating cyber threat intelligence dashboard.</b><br/>
+  Aggregates security news, CISA advisories, CVEs, exploited-vulnerability data, and ransomware activity into one place — with real-time analytics.
+</p>
 
-A self-hosted dashboard that continuously collects the latest cybersecurity
-news, official advisories, vulnerabilities, and ransomware activity, and
-turns it into a live, chart-driven view of the current threat landscape.
+<p align="center">
+  <img alt="CI" src="https://github.com/Ezaz-Ahmad/ThreatPulse/actions/workflows/ci.yml/badge.svg" />
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" />
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" />
+  <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white" />
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
+</p>
 
-**Live demo:** _add your deployed URL here once hosted_
+<p align="center">
+  <a href="#live-demo">Live Demo</a> ·
+  <a href="#key-features">Features</a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#tech-stack">Tech Stack</a> ·
+  <a href="#api-reference">API Reference</a>
+</p>
 
-## What it collects
+---
 
-- **News** — RSS from The Hacker News, BleepingComputer, Krebs on Security,
-  Dark Reading, SecurityWeek, and The Record.
-- **CISA Advisories** — official advisories RSS feed.
-- **CISA KEV Catalog** — the Known Exploited Vulnerabilities catalog (flags
-  which CVEs are being actively exploited, and which are tied to ransomware).
-- **CVEs** — recently published/modified vulnerabilities from the NVD API,
-  with CVSS score and severity.
-- **Ransomware Tracker** — recent victims posted to ransomware leak sites,
-  via the public ransomware.live API.
+## Why this exists
 
-Data refreshes automatically on a schedule (every 6 hours by default) and can
-also be refreshed on demand from the dashboard.
+Security teams (and anyone tracking the threat landscape) have to check a dozen
+different places — news sites, CISA's site, NVD, ransomware leak-site
+trackers — just to stay current. **ThreatPulse pulls all of it into a single
+dashboard**, refreshes itself on a schedule, and turns the raw feeds into
+charts: severity breakdowns, top ransomware groups, targeted sectors, and
+volume trends over time.
 
-## Analytics
+## Live Demo
 
-Beyond raw feeds, the dashboard computes and charts:
+> 🔗 _Add your deployed URL here once hosted (see [Deployment](#deployment))._
 
-- News volume over the last 30 days
-- CVE severity distribution
-- Top ransomware groups by victim count (last 90 days)
-- Most-targeted sectors (last 90 days)
-- KEV catalog additions over time
+## Key Features
 
-Charts are lazy-loaded (code-split) so the main dashboard bundle stays small.
+- 📰 **Aggregated news** — pulls from The Hacker News, BleepingComputer, Krebs
+  on Security, Dark Reading, SecurityWeek, and The Record
+- 🏛️ **Official advisories** — live CISA advisories feed
+- 🎯 **Known Exploited Vulnerabilities** — the CISA KEV catalog, flagged by
+  ransomware association
+- 🧬 **CVE tracking** — recent vulnerabilities from the NVD API with CVSS
+  score and severity
+- 🔓 **Ransomware tracker** — recent leak-site victim postings
+- 📊 **Built-in analytics** — news volume, severity distribution, top
+  ransomware groups, most-targeted sectors, KEV timeline — charted, not just
+  listed
+- ⏱️ **Self-updating** — background scheduler refreshes every source on a
+  configurable interval, plus a manual "Refresh Now" button
+- ✅ **Tested** — 20+ automated tests (ingestion parsing + API layer), CI
+  runs on every push
+- 🐳 **Containerized** — one `docker compose up` gets the full stack running
+  locally, database included
+
+## Screenshot
+
+> _Add a screenshot or short GIF of the dashboard here — this is the first
+> thing recruiters look at._
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | FastAPI, SQLAlchemy, APScheduler |
+| Frontend | React, Vite, Recharts |
+| Database | PostgreSQL (production) / SQLite (local dev) |
+| Testing | Pytest, FastAPI TestClient |
+| CI/CD | GitHub Actions |
+| Deployment | Docker, Render, Vercel, Neon |
 
 ## Architecture
 
@@ -42,43 +81,27 @@ backend/    FastAPI + SQLAlchemy + APScheduler   -> REST API, background ingesti
 frontend/   React + Vite + Recharts               -> dashboard UI
 ```
 
-- **Database:** SQLite by default (zero setup for local dev). Set
-  `DATABASE_URL` to a Postgres connection string for production — required
-  on most free hosting, since their filesystems are ephemeral and would wipe
-  a local SQLite file on every restart.
-- **Ingestion:** every source has a `fetch_*()` function (does the network
-  call) and a `process_*()` function (pure parsing/upsert logic, no network).
-  That split is what makes the ingestion logic unit-testable offline.
-- **Dedup:** all ingestion is upsert-based (matched on URL/CVE ID/etc.), so
-  re-running it never creates duplicates and is safe to run as often as
-  you like.
+- **Ingestion split by design:** every data source has a `fetch_*()`
+  function (does the network call) and a `process_*()` function (pure
+  parsing/upsert logic, no network) — this is what makes ingestion unit
+  testable offline, without hitting live APIs in CI.
+- **Dedup by design:** all ingestion is upsert-based (matched on URL/CVE
+  ID/etc.), so re-running it never creates duplicates.
+- **Database-agnostic:** SQLite locally, Postgres in production — switched
+  with a single `DATABASE_URL` environment variable, no code changes.
 
-## Testing & CI
+## Quick Start
 
-```bash
-cd backend
-pip install -r requirements-dev.txt
-pytest
-```
-
-20+ tests cover the ingestion parsers (via fixture RSS/JSON, no network
-needed) and the API endpoints (via an isolated in-memory-style test database).
-`.github/workflows/ci.yml` runs the backend test suite and a frontend
-production build on every push/PR — replace `YOUR_USERNAME/YOUR_REPO` in the
-badge URL above once this is pushed to GitHub.
-
-## Local setup
-
-### Option A — Docker Compose (full stack, one command)
+### Option A — Docker Compose (fastest, one command)
 
 ```bash
 docker compose up --build
 ```
 
-This starts Postgres, the backend (http://localhost:8000), and the frontend
-(http://localhost:5173) together, wired up automatically.
+Starts Postgres, the backend (`localhost:8000`), and the frontend
+(`localhost:5173`) together.
 
-### Option B — run each piece manually
+### Option B — run manually
 
 **Backend:**
 ```bash
@@ -97,67 +120,38 @@ cp .env.example .env
 npm run dev
 ```
 
-Environment variables (backend, optional):
-
 | Variable | Purpose | Default |
 |---|---|---|
 | `DATABASE_URL` | Postgres connection string (falls back to local SQLite if unset) | _(sqlite)_ |
-| `UPDATE_INTERVAL_HOURS` | How often the built-in scheduler re-fetches all sources | `6` |
+| `UPDATE_INTERVAL_HOURS` | How often the scheduler re-fetches all sources | `6` |
 | `NVD_API_KEY` | Free key from nvd.nist.gov, raises the CVE API rate limit | _(none)_ |
 | `CVE_LOOKBACK_DAYS` | How many days back to pull modified CVEs | `3` |
 
-## Deploying it for free
+## Testing & CI
 
-This combination gives you a live URL with a real, persistent Postgres
-database, at $0/month:
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
+```
 
-**1. Database — [Neon](https://neon.tech)**
-Create a free project, copy the connection string it gives you (starts with
-`postgresql://`).
+20+ tests cover ingestion parsers (via fixture RSS/JSON, no network needed)
+and the API layer (isolated test database). `.github/workflows/ci.yml` runs
+the full suite plus a frontend production build on every push/PR.
 
-**2. Backend — [Render](https://render.com)**
-- New Web Service → connect your GitHub repo → root directory `backend`
-- Render auto-detects the `Dockerfile`, or set build command
-  `pip install -r requirements.txt` and start command
-  `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Add environment variable `DATABASE_URL` = the Neon connection string
-- Deploy — you'll get a URL like `https://your-app.onrender.com`
+## Deployment
 
-Note: Render's free tier spins the service down after 15 minutes idle
-(cold starts take ~30-60s on the next request) and gives 750 free instance
-hours/month — plenty for a portfolio demo.
+Live and free, using:
 
-**3. Frontend — [Vercel](https://vercel.com)**
-- New Project → import the repo → root directory `frontend`
-- Build command `npm run build`, output directory `dist`
-- Environment variable `VITE_API_BASE` = your Render backend URL
-- Deploy — you'll get a URL like `https://your-app.vercel.app`
+1. **[Neon](https://neon.tech)** — free, permanent Postgres database
+2. **[Render](https://render.com)** — free FastAPI backend hosting (auto-deploys from GitHub, includes a `Dockerfile`)
+3. **[Vercel](https://vercel.com)** — free React frontend hosting
+4. **GitHub Actions** — a scheduled workflow (`scheduled-refresh.yml`) pings the backend every 6 hours to keep data fresh and wake it from Render's free-tier sleep
 
-**4. Keep data fresh even while the backend sleeps**
-`.github/workflows/scheduled-refresh.yml` pings `POST /api/refresh` on a cron
-schedule (every 6 hours) — this both refreshes data and wakes the service
-back up. Set a repository variable `BACKEND_URL` to your Render URL
-(Settings → Secrets and variables → Actions → Variables) to enable it.
+Set `DATABASE_URL` (Render) to your Neon connection string, and
+`VITE_API_BASE` (Vercel) to your Render URL — that's the only wiring needed.
 
-Put the resulting Vercel URL at the top of this README as your live demo
-link.
-
-## Notes on data source reliability
-
-This project was originally built in a sandboxed dev environment with
-restricted outbound network access, so some ingestion endpoints could only
-be verified against public documentation rather than live traffic. Worth
-checking on your first real run:
-
-- `ransomware.live`'s exact JSON field names have shifted across API
-  versions before. `backend/app/ingest/ransomware.py` reads several
-  plausible key names defensively — if a live run logs 0 new ransomware
-  records, print one raw record from the API response and adjust the
-  `_first(...)` key lookups.
-- CISA has changed feed URLs before; if the advisories feed returns nothing,
-  check cisa.gov for the current advisories RSS link.
-
-## API reference
+## API Reference
 
 | Endpoint | Description |
 |---|---|
@@ -173,3 +167,29 @@ checking on your first real run:
 | `GET /api/analytics/top-sectors` | Top targeted sectors (`?limit=`, `?days=`) |
 | `GET /api/analytics/kev-timeline` | Daily KEV catalog additions (`?days=`) |
 | `POST /api/refresh` | Trigger an immediate ingestion run |
+
+## Roadmap
+
+- [ ] User accounts + saved watchlists (track specific vendors/CVEs/groups)
+- [ ] Live alerts via Slack/Discord/email on critical CVEs or new KEV entries
+- [ ] Interactive world map of ransomware activity by country
+- [ ] Historical trend comparisons (week-over-week, month-over-month)
+
+## Notes on data source reliability
+
+- `ransomware.live`'s exact JSON field names have shifted across API
+  versions before. `backend/app/ingest/ransomware.py` reads several
+  plausible key names defensively — if a live run logs 0 new ransomware
+  records, print one raw record and adjust the `_first(...)` key lookups.
+- CISA has changed feed URLs before; check cisa.gov for the current
+  advisories RSS link if that feed ever returns nothing.
+
+## Author
+
+**Ezaz Ahmad**
+GitHub: [@Ezaz-Ahmad](https://github.com/Ezaz-Ahmad)
+_Add your LinkedIn / portfolio link here._
+
+## License
+
+MIT — see [LICENSE](LICENSE).

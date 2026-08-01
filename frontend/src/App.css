@@ -840,12 +840,19 @@ body {
 .tabs-wrap {
   position: relative;
   margin-bottom: 18px;
+  /* Same card treatment as .stat-card (gradient panel + border + radius) so
+     the tab strip reads as a solid, anchored piece of the UI instead of
+     bare text floating in empty space between the stat cards and the
+     content below it. */
+  background: linear-gradient(160deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
 }
 
 .tabs {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
 }
 
@@ -874,13 +881,13 @@ body {
 .tabs-fade-left {
   left: 0;
   justify-content: flex-start;
-  background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
+  background: linear-gradient(to right, var(--panel-2) 0%, transparent 100%);
 }
 
 .tabs-fade-right {
   right: 0;
   justify-content: flex-end;
-  background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
+  background: linear-gradient(to left, var(--panel-2) 0%, transparent 100%);
 }
 
 .tabs-fade-arrow {
@@ -899,37 +906,26 @@ body {
 
 .tab {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--muted);
-  padding: 11px 16px;
+  padding: 10px 16px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  border-radius: 8px;
   position: relative;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.tab::after {
-  content: "";
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: -1px;
-  height: 2px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transition: transform 0.25s ease;
-  box-shadow: 0 0 10px var(--glow-accent);
-}
+.tab:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
 
-.tab:hover { color: var(--text); }
-
+/* Same tinted-pill language as .chip.active, so the selected tab reads as
+   a solid, pressed-in segment of the bar rather than a floating underline. */
 .tab.active {
-  color: var(--text);
-}
-
-.tab.active::after {
-  transform: scaleX(1);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 @media (max-width: 640px) {

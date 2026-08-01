@@ -1,5 +1,7 @@
 import { useShowMore } from "../hooks/useShowMore";
+import { useCategoryFilter } from "../hooks/useCategoryFilter";
 import ShowMoreControl from "./ShowMoreControl";
+import CategoryChips from "./CategoryChips";
 
 function regionName(code) {
   if (!code) return null;
@@ -11,12 +13,27 @@ function regionName(code) {
 }
 
 export default function RansomwareTable({ items }) {
-  const { visible, shown, total, remaining, hasMore, showMore, showAll } = useShowMore(items, 10, 10);
+  const {
+    active, setActive, total: allTotal, visibleCategories, hiddenCount, expanded, setExpanded, filtered,
+  } = useCategoryFilter(items, (r) => r.sector, { unknownLabel: "Unspecified Sector", maxVisible: 6 });
+
+  const { visible, shown, total, remaining, hasMore, showMore, showAll } = useShowMore(filtered, 10, 10);
 
   if (!items?.length) return <div className="empty-state">No ransomware activity recorded yet. Try refreshing.</div>;
 
   return (
     <div>
+      <CategoryChips
+        active={active}
+        onSelect={setActive}
+        total={allTotal}
+        allLabel="All Sectors"
+        visibleCategories={visibleCategories}
+        hiddenCount={hiddenCount}
+        expanded={expanded}
+        onToggleExpand={() => setExpanded((v) => !v)}
+      />
+
       <div className="card-list">
         {visible.map((r, i) => (
           <div

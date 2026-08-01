@@ -1,13 +1,30 @@
 import { useShowMore } from "../hooks/useShowMore";
+import { useCategoryFilter } from "../hooks/useCategoryFilter";
 import ShowMoreControl from "./ShowMoreControl";
+import CategoryChips from "./CategoryChips";
 
 export default function AdvisoryList({ items }) {
-  const { visible, shown, total, remaining, hasMore, showMore, showAll } = useShowMore(items, 10, 10);
+  const {
+    active, setActive, total: allTotal, visibleCategories, hiddenCount, expanded, setExpanded, filtered,
+  } = useCategoryFilter(items, (a) => a.source, { unknownLabel: "Other Source", maxVisible: 6 });
+
+  const { visible, shown, total, remaining, hasMore, showMore, showAll } = useShowMore(filtered, 10, 10);
 
   if (!items?.length) return <div className="empty-state">No advisories yet. Try refreshing.</div>;
 
   return (
     <div>
+      <CategoryChips
+        active={active}
+        onSelect={setActive}
+        total={allTotal}
+        allLabel="All Sources"
+        visibleCategories={visibleCategories}
+        hiddenCount={hiddenCount}
+        expanded={expanded}
+        onToggleExpand={() => setExpanded((v) => !v)}
+      />
+
       <div className="card-list">
         {visible.map((a, i) => (
           <div
@@ -24,6 +41,7 @@ export default function AdvisoryList({ items }) {
           </div>
         ))}
       </div>
+
       <ShowMoreControl
         shown={shown}
         total={total}

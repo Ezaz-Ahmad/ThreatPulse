@@ -97,6 +97,14 @@ export default function Home() {
 
   useEffect(() => () => clearTimeout(pollTimer.current), []);
 
+  const handleStatSelect = (key) => {
+    setTab(key);
+    setSearch("");
+    requestAnimationFrame(() => {
+      document.getElementById("data-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     setRefreshNote("Refresh started — this can take up to a minute…");
@@ -149,9 +157,9 @@ export default function Home() {
 
       {refreshNote && <div className="refresh-note">{refreshNote}</div>}
 
-      <StatCards stats={stats} />
+      <StatCards stats={stats} onSelectTab={handleStatSelect} />
 
-      <div className="tabs">
+      <div className="tabs" id="data-tabs">
         {TABS.map((t) => (
           <button
             key={t.key}

@@ -591,7 +591,8 @@ body {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  align-items: start;
   gap: 12px;
   margin-bottom: 26px;
 }
@@ -637,6 +638,188 @@ body {
   font-size: 12px;
   color: var(--muted);
   margin-top: 4px;
+}
+
+/* ---------------- Interactive stat cards ---------------- */
+
+.stat-card-interactive {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.stat-card-interactive:hover,
+.stat-card-interactive:focus-visible {
+  border-color: color-mix(in srgb, var(--stat-accent, var(--accent)) 55%, var(--border-bright));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), 0 0 16px -4px color-mix(in srgb, var(--stat-accent, var(--accent)) 45%, transparent);
+}
+
+.stat-card-interactive:focus-visible {
+  outline: 2px solid var(--stat-accent, var(--accent));
+  outline-offset: 2px;
+}
+
+.stat-card-interactive:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.stat-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--stat-accent, var(--accent)) 15%, transparent);
+  color: var(--stat-accent, var(--accent));
+}
+
+.stat-viz {
+  flex: 1;
+  max-width: 92px;
+  min-width: 46px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.stat-viz .sparkline {
+  width: 100%;
+  height: 30px;
+  display: block;
+}
+
+.stat-viz-wide {
+  margin-top: 12px;
+}
+
+.stat-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  min-height: 16px;
+}
+
+.stat-trend {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.stat-live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.stat-card-cta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--stat-accent, var(--accent));
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.stat-card-interactive:hover .stat-card-cta,
+.stat-card-interactive:focus-visible .stat-card-cta {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Mini severity bar (Tracked CVEs card) */
+
+.mini-severity-bar {
+  display: flex;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--panel-2);
+}
+
+.mini-severity-seg {
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+/* Radial progress ring (Ransomware-linked KEVs card) */
+
+.radial-progress-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--text);
+}
+
+.radial-progress-arc {
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Mini rank list (top ransomware groups) */
+
+.mini-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.mini-rank-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 18px;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+}
+
+.mini-rank-label {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-rank-track {
+  height: 4px;
+  background: var(--panel-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mini-rank-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.mini-rank-count {
+  text-align: right;
+  color: var(--muted);
+  font-family: var(--font-mono);
 }
 
 /* ---------------- Tabs ---------------- */

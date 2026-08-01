@@ -186,6 +186,74 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+.hero-ticker {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.hero-ticker-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.hero-ticker-label .pulse-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.hero-ticker-line {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  line-height: 1.4;
+  min-height: 2.8em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.hero-ticker-line.is-vanishing {
+  opacity: 0;
+}
+
+.hero-ticker-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 15px;
+  margin-left: 2px;
+  background: var(--accent);
+  vertical-align: -2px;
+  animation: blink 0.9s step-end infinite;
+}
+
+.hero-ticker-tag {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+
+.hero-ticker-line:hover {
+  color: var(--accent);
+}
+
+.hero-ticker-meta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.85;
+}
+
 @keyframes blink {
   50% { opacity: 0; }
 }

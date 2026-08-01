@@ -65,3 +65,52 @@ def kev_timeline(db: Session = Depends(get_db), days: int = 90):
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     rows = db.query(KEVEntry.date_added).filter(KEVEntry.date_added >= cutoff).all()
     return _daily_buckets([r[0] for r in rows], days)
+
+
+@router.get("/by-country")
+def by_country(db: Session = Depends(get_db)):
+    """Ransomware incident activity grouped by victim country.
+
+    This is the only table in the schema with any geography on it — KEV and
+    CVE data are vendor/product-based with no country field, so a country
+    view can only ever reflect ransomware activity, not vulnerabilities in
+    general. All-time (no date cutoff) rather than a rolling window, since
+    the dataset is still small enough that a 90-day cutoff would leave a lot
+    of countries with a single old incident invisible on the map.
+    """
+    rows = (
+        db.query(
+            RansomwareVictim.country,
+            RansomwareVictim.group_name,
+            RansomwareVictim.sector,
+            RansomwareVictim.published_at,
+        )
+        .filter(RansomwareVictim.country.isnot(None))
+        .all()
+    )
+
+    by_country = defaultdict(lambda: {"count": 0, "groups": Counter(), "sectors": Counter(), "latest": None})
+    for country, group, sector, published_at in rows:
+        entry = by_country[country]
+        entry["count"] += 1
+        if group:
+            entry["groups"][group] += 1
+        if sector:
+            entry["sectors"][sector] += 1
+        if published_at and (entry["latest"] is None or published_at > entry["latest"]):
+            entry["latest"] = published_at
+
+    result = []
+    for country, data in by_country.items():
+        top_group = data["groups"].most_common(1)
+        top_sector = data["sectors"].most_common(1)
+        result.append({
+            "country": country,
+            "count": data["count"],
+            "top_group": top_group[0][0] if top_group else None,
+            "top_sector": top_sector[0][0] if top_sector else None,
+            "latest_at": data["latest"].isoformat() if data["latest"] else None,
+        })
+
+    result.sort(key=lambda r: r["count"], reverse=True)
+    return result

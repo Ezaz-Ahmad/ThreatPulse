@@ -13,8 +13,11 @@ def list_ransomware(
     db: Session = Depends(get_db),
     limit: int = Query(50, le=500),
     group: Optional[str] = None,
+    country: Optional[str] = None,
 ):
     q = db.query(RansomwareVictim)
     if group:
         q = q.filter(RansomwareVictim.group_name == group)
+    if country:
+        q = q.filter(RansomwareVictim.country == country.upper())
     return q.order_by(RansomwareVictim.published_at.desc().nullslast()).limit(limit).all()

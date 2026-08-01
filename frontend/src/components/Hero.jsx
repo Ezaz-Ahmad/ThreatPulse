@@ -250,8 +250,11 @@ export default function Hero() {
       </div>
 
       <div className="hero-cta-row">
-        <Link to="/about" className="hero-scroll-cue">
-          About This Project <span className="arrow arrow-right">→</span>
+        <Link to="/map" className="hero-scroll-cue">
+          Global Threat Map <span className="arrow arrow-right">→</span>
+        </Link>
+        <Link to="/about" className="hero-scroll-cue outline">
+          About This Project
         </Link>
         <a href="#dashboard" className="hero-scroll-cue outline">
           Skip to Dashboard

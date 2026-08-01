@@ -23,4 +23,5 @@ export const api = {
   topRansomwareGroups: (limit = 10, days = 90) => get(`/api/analytics/top-ransomware-groups?limit=${limit}&days=${days}`),
   topSectors: (limit = 10, days = 90) => get(`/api/analytics/top-sectors?limit=${limit}&days=${days}`),
   kevTimeline: (days = 90) => get(`/api/analytics/kev-timeline?days=${days}`),
+  byCountry: () => get("/api/analytics/by-country"),
 };

@@ -1,6 +1,25 @@
-from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, ConfigDict
+from datetime import datetime, timezone
+from typing import Annotated, Optional
+from pydantic import BaseModel, ConfigDict, PlainSerializer
+
+
+def _to_utc_iso(dt: datetime) -> str:
+    """Always serialize datetimes with an explicit UTC offset.
+
+    SQLite (used in local dev) drops timezone info on round-trip, returning
+    naive datetimes. Postgres (production) preserves it. Without this, a
+    naive datetime serializes without a 'Z'/offset suffix, and browsers then
+    parse it as *local* time instead of converting from UTC - silently
+    shifting every timestamp on the dashboard. All datetimes stored by this
+    app are UTC by convention (see models.now_utc), so a naive value here
+    always means "this is UTC, the timezone info just got lost."
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).isoformat()
+
+
+UTCDatetime = Annotated[datetime, PlainSerializer(_to_utc_iso, return_type=str)]
 
 
 class NewsItemOut(BaseModel):
@@ -10,7 +29,7 @@ class NewsItemOut(BaseModel):
     title: str
     link: str
     summary: Optional[str] = None
-    published_at: Optional[datetime] = None
+    published_at: Optional[UTCDatetime] = None
 
 
 class AdvisoryOut(BaseModel):
@@ -20,7 +39,7 @@ class AdvisoryOut(BaseModel):
     advisory_id: Optional[str] = None
     title: str
     link: str
-    published_at: Optional[datetime] = None
+    published_at: Optional[UTCDatetime] = None
 
 
 class CVEOut(BaseModel):
@@ -30,7 +49,7 @@ class CVEOut(BaseModel):
     description: Optional[str] = None
     cvss_score: Optional[float] = None
     severity: Optional[str] = None
-    published_at: Optional[datetime] = None
+    published_at: Optional[UTCDatetime] = None
     source_url: Optional[str] = None
 
 
@@ -41,8 +60,8 @@ class KEVOut(BaseModel):
     vendor_project: Optional[str] = None
     product: Optional[str] = None
     vulnerability_name: Optional[str] = None
-    date_added: Optional[datetime] = None
-    due_date: Optional[datetime] = None
+    date_added: Optional[UTCDatetime] = None
+    due_date: Optional[UTCDatetime] = None
     known_ransomware_use: Optional[str] = None
     notes: Optional[str] = None
 
@@ -54,7 +73,7 @@ class RansomwareOut(BaseModel):
     victim_name: str
     country: Optional[str] = None
     sector: Optional[str] = None
-    published_at: Optional[datetime] = None
+    published_at: Optional[UTCDatetime] = None
     link: Optional[str] = None
 
 
@@ -67,4 +86,4 @@ class StatsOut(BaseModel):
     news_last_7_days: int
     ransomware_last_7_days: int
     kev_ransomware_flagged: int
-    last_ingest_at: Optional[datetime] = None
+    last_ingest_at: Optional[UTCDatetime] = None

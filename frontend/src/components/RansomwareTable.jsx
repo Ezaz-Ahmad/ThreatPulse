@@ -12,8 +12,8 @@ export default function RansomwareTable({ items }) {
         </tr>
       </thead>
       <tbody>
-        {items.map((r) => (
-          <tr key={r.id}>
+        {items.map((r, i) => (
+          <tr key={r.id} style={{ animationDelay: `${Math.min(i, 12) * 0.03}s` }}>
             <td><span className="badge ransomware">{r.group_name}</span></td>
             <td>{r.link ? <a href={r.link} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{r.victim_name}</a> : r.victim_name}</td>
             <td>{r.sector ?? "-"}</td>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from "react";
 import "./App.css";
 import { api } from "./api";
 import StatCards from "./components/StatCards";
@@ -7,6 +7,9 @@ import AdvisoryList from "./components/AdvisoryList";
 import CVETable from "./components/CVETable";
 import KEVTable from "./components/KEVTable";
 import RansomwareTable from "./components/RansomwareTable";
+import Hero from "./components/Hero";
+import SkeletonLoader from "./components/SkeletonLoader";
+import LiveClock from "./components/LiveClock";
 const AnalyticsPanel = lazy(() => import("./components/AnalyticsPanel"));
 
 const TABS = [
@@ -18,6 +21,10 @@ const TABS = [
   { key: "analytics", label: "Analytics" },
 ];
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const POLL_INTERVAL_MS = 5000;
+const MAX_POLL_ATTEMPTS = 30; // ~2.5 minutes of polling before giving up
+
 export default function App() {
   const [tab, setTab] = useState("news");
   const [stats, setStats] = useState(null);
@@ -26,13 +33,18 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshNote, setRefreshNote] = useState("");
+  const pollTimer = useRef(null);
 
   const loadStats = useCallback(async () => {
     try {
-      setStats(await api.stats());
+      const fresh = await api.stats();
+      setStats(fresh);
+      return fresh;
     } catch (e) {
       // stats failure shouldn't block the rest of the UI
       console.error(e);
+      return null;
     }
   }, []);
 
@@ -65,32 +77,67 @@ export default function App() {
     loadTabData(tab, search);
   }, [tab, search, loadTabData]);
 
+  // Keep the dashboard from going stale if someone leaves the tab open all day.
+  useEffect(() => {
+    const id = setInterval(() => {
+      window.location.reload();
+    }, ONE_DAY_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => () => clearTimeout(pollTimer.current), []);
+
   const handleRefresh = async () => {
     setRefreshing(true);
+    setRefreshNote("Refresh started — this can take up to a minute…");
+    const previousTimestamp = stats?.last_ingest_at ?? null;
+
     try {
-      await api.refresh();
-      await loadStats();
+      await api.refresh(); // returns almost instantly; ingestion runs in the background
+
+      let attempts = 0;
+      let updated = false;
+      while (attempts < MAX_POLL_ATTEMPTS) {
+        await new Promise((resolve) => {
+          pollTimer.current = setTimeout(resolve, POLL_INTERVAL_MS);
+        });
+        const fresh = await loadStats();
+        attempts += 1;
+        if (fresh?.last_ingest_at && fresh.last_ingest_at !== previousTimestamp) {
+          updated = true;
+          break;
+        }
+      }
+
       await loadTabData(tab, search);
+      setRefreshNote(updated ? "" : "Still finishing up in the background — check back in a bit.");
     } catch (e) {
       setError("Refresh failed. Check the backend logs.");
+      setRefreshNote("");
     } finally {
       setRefreshing(false);
     }
   };
 
   return (
-    <div className="app">
+    <>
+      <div className="grid-backdrop" />
+      <Hero />
+      <div className="app" id="dashboard">
       <div className="app-header">
         <h1>Threat<span>Pulse</span></h1>
         <div className="header-meta">
+          <LiveClock />
           {stats?.last_ingest_at && (
-            <span>Last updated: {new Date(stats.last_ingest_at).toLocaleString()}</span>
+            <span className="last-updated">Data updated: {new Date(stats.last_ingest_at).toLocaleString()}</span>
           )}
           <button className="refresh-btn" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? "Refreshing..." : "Refresh Now"}
+            {refreshing ? "Refreshing…" : "Refresh Now"}
           </button>
         </div>
       </div>
+
+      {refreshNote && <div className="refresh-note">{refreshNote}</div>}
 
       <StatCards stats={stats} />
 
@@ -116,7 +163,11 @@ export default function App() {
         </div>
       )}
 
-      {tab !== "analytics" && loading && <div className="loading">Loading…</div>}
+      {tab !== "analytics" && loading && (
+        <div className="loading">
+          <SkeletonLoader rows={tab === "kev" || tab === "cves" || tab === "ransomware" ? 6 : 4} />
+        </div>
+      )}
       {tab !== "analytics" && error && <div className="error-state">{error}</div>}
 
       {!loading && !error && tab === "news" && <NewsList items={data} />}
@@ -133,8 +184,10 @@ export default function App() {
       <div className="footer-note">
         Sources: The Hacker News, BleepingComputer, Krebs on Security, Dark Reading, SecurityWeek, The Record ·
         CISA Advisories &amp; Known Exploited Vulnerabilities Catalog · NVD CVE feed · ransomware.live leak-site tracker.
-        Data auto-refreshes on a schedule set by the backend (default every 6 hours).
+        Data auto-refreshes on a schedule set by the backend (default every 6 hours), and this page reloads itself
+        once every 24 hours to stay current if left open.
       </div>
-    </div>
+      </div>
+    </>
   );
 }

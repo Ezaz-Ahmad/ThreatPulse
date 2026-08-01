@@ -21,8 +21,8 @@ export default function CVETable({ items }) {
         </tr>
       </thead>
       <tbody>
-        {items.map((c) => (
-          <tr key={c.id}>
+        {items.map((c, i) => (
+          <tr key={c.id} style={{ animationDelay: `${Math.min(i, 12) * 0.03}s` }}>
             <td><a href={c.source_url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{c.cve_id}</a></td>
             <td>{c.severity ? <span className={`badge ${severityClass(c.severity)}`}>{c.severity}</span> : "-"}</td>
             <td>{c.cvss_score ?? "-"}</td>

@@ -13,8 +13,8 @@ export default function KEVTable({ items }) {
         </tr>
       </thead>
       <tbody>
-        {items.map((k) => (
-          <tr key={k.id}>
+        {items.map((k, i) => (
+          <tr key={k.id} style={{ animationDelay: `${Math.min(i, 12) * 0.03}s` }}>
             <td>{k.cve_id}</td>
             <td>{k.vendor_project} {k.product ? `/ ${k.product}` : ""}</td>
             <td style={{ maxWidth: 320 }}>{k.vulnerability_name}</td>

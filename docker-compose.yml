@@ -23,7 +23,7 @@ services:
     build: ./backend
     environment:
       DATABASE_URL: postgresql://threatpulse:threatpulse@db:5432/threatpulse
-      UPDATE_INTERVAL_HOURS: "6"
+      UPDATE_INTERVAL_HOURS: "1"
     ports:
       - "8000:8000"
     depends_on:

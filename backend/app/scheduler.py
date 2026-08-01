@@ -12,7 +12,7 @@ def start_scheduler():
     global _scheduler
     if _scheduler is not None:
         return _scheduler
-    interval_hours = float(os.getenv("UPDATE_INTERVAL_HOURS", "6"))
+    interval_hours = float(os.getenv("UPDATE_INTERVAL_HOURS", "1"))
     _scheduler = BackgroundScheduler(timezone="UTC")
     _scheduler.add_job(
         run_all_ingestion,

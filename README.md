@@ -123,7 +123,7 @@ npm run dev
 | Variable | Purpose | Default |
 |---|---|---|
 | `DATABASE_URL` | Postgres connection string (falls back to local SQLite if unset) | _(sqlite)_ |
-| `UPDATE_INTERVAL_HOURS` | How often the scheduler re-fetches all sources | `6` |
+| `UPDATE_INTERVAL_HOURS` | How often the scheduler re-fetches all sources | `1` |
 | `NVD_API_KEY` | Free key from nvd.nist.gov, raises the CVE API rate limit | _(none)_ |
 | `CVE_LOOKBACK_DAYS` | How many days back to pull modified CVEs | `3` |
 

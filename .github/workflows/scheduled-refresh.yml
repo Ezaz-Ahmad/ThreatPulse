@@ -12,7 +12,7 @@ name: Scheduled data refresh
 
 on:
   schedule:
-    - cron: "0 */6 * * *"  # every 6 hours
+    - cron: "0 * * * *"  # every hour, so the live feed stays as current as possible
   workflow_dispatch: {}
 
 jobs:

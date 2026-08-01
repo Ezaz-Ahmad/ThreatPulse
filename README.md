@@ -139,17 +139,35 @@ pytest
 and the API layer (isolated test database). `.github/workflows/ci.yml` runs
 the full suite plus a frontend production build on every push/PR.
 
-## Deployment
+## Infrastructure & Hosting
 
-Live and free, using:
+ThreatPulse is deployed as a real three-tier production setup rather than
+bundled onto a single platform — each piece was chosen for a specific reason,
+not just because it was free:
 
-1. **[Neon](https://neon.tech)** — free, permanent Postgres database
-2. **[Render](https://render.com)** — free FastAPI backend hosting (auto-deploys from GitHub, includes a `Dockerfile`)
-3. **[Vercel](https://vercel.com)** — free React frontend hosting
-4. **GitHub Actions** — a scheduled workflow (`scheduled-refresh.yml`) pings the backend every 6 hours to keep data fresh and wake it from Render's free-tier sleep
+```
+ Browser
+    │
+    ▼
+ Vercel  (global CDN edge)   →  React dashboard
+    │  HTTPS fetch
+    ▼
+ Render  (Docker container)  →  FastAPI backend + APScheduler
+    │  DATABASE_URL
+    ▼
+ Neon    (serverless Postgres) → persisted data
+```
 
-Set `DATABASE_URL` (Render) to your Neon connection string, and
-`VITE_API_BASE` (Vercel) to your Render URL — that's the only wiring needed.
+| Service | Role | Why this one |
+|---|---|---|
+| **[Neon](https://neon.tech)** | Managed PostgreSQL | Render's free-tier filesystem is wiped on every restart/redeploy, so a local SQLite file would lose all collected data. Neon decouples the database from the app server entirely, has a genuinely permanent free tier (not a trial), and scales to zero when idle — so it costs nothing while the project sits quiet. |
+| **[Render](https://render.com)** | Backend hosting (FastAPI, Dockerized) | Builds straight from the repo's own `Dockerfile` with no extra config, and — unlike most serverless platforms — supports a long-running background process, which the APScheduler ingestion job needs. |
+| **[Vercel](https://vercel.com)** | Frontend hosting (React/Vite) | Serves the static build from a global CDN edge, so the dashboard itself loads fast for anyone, anywhere, independent of where the backend is running. Zero-config deploys for Vite projects, auto-redeploys on every push. |
+| **GitHub Actions** | CI/CD + scheduled refresh | Runs the full test suite on every push before anything reaches production, and a separate scheduled workflow (`scheduled-refresh.yml`) pings the live backend every 6 hours — keeping data current and reducing how often Render's free tier goes fully cold. |
+
+Wiring between them is two environment variables: `DATABASE_URL` on Render
+(set to the Neon connection string) and `VITE_API_BASE` on Vercel (set to the
+Render backend URL).
 
 ## API Reference
 

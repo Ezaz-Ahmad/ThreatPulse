@@ -218,6 +218,86 @@ def test_score_lookup_strong_malicious():
     assert result["confidence"] == "high"
 
 
+def test_score_lookup_escalates_confirmed_family_despite_no_threatpulse_match():
+    # Regression for the exact scenario reported: a hash with strong
+    # cross-provider agreement on a known ransomware family should classify
+    # as strong/high-priority even though the score alone (VT 35 + OTX 10 +
+    # URLhaus 20 = 65) falls short of the 70-point "strong" threshold,
+    # purely because ThreatPulse had no prior record of the hash.
+    sources = {
+        "abuseipdb": {"status": "unsupported_type"},
+        "virustotal": {"status": "success", "malicious": 48, "suspicious": 0, "harmless": 20, "malware_family": "WannaCry ransomware"},
+        "otx": {"status": "success", "pulse_count": 50},
+        "urlhaus": {"status": "success", "matches": 6},
+        "threatpulse": {"status": "no_match", "mention_count": 0},
+    }
+    correlation = {"status": "no_match", "mention_count": 0, "mentions": []}
+    result = score_lookup(sources, correlation)
+    assert result["risk_score"] == 35 + 10 + 20  # 65 - unchanged by the override
+    assert result["verdict"] == "strong_malicious_indicators"
+    assert "wannacry" in result["verdict_label"].lower()
+    assert priority_for_verdict(result["verdict"]) == "high"
+    override_reasons = [r for r in result["score_reasons"] if r["source"] == "Classification override"]
+    assert len(override_reasons) == 1
+    assert override_reasons[0]["points"] == 0
+
+
+def test_score_lookup_escalates_high_vt_count_with_corroboration():
+    sources = {
+        "abuseipdb": {"status": "not_configured"},
+        "virustotal": {"status": "success", "malicious": 25, "suspicious": 0, "harmless": 40},
+        "otx": {"status": "success", "pulse_count": 3},
+        "urlhaus": {"status": "no_match"},
+        "threatpulse": {"status": "no_match", "mention_count": 0},
+    }
+    correlation = {"status": "no_match", "mention_count": 0, "mentions": []}
+    result = score_lookup(sources, correlation)
+    assert result["verdict"] == "strong_malicious_indicators"
+
+
+def test_score_lookup_escalates_very_high_vt_count_alone():
+    sources = {
+        "abuseipdb": {"status": "not_configured"},
+        "virustotal": {"status": "success", "malicious": 45, "suspicious": 0, "harmless": 20},
+        "otx": {"status": "not_configured"},
+        "urlhaus": {"status": "no_match"},
+        "threatpulse": {"status": "no_match", "mention_count": 0},
+    }
+    correlation = {"status": "no_match", "mention_count": 0, "mentions": []}
+    result = score_lookup(sources, correlation)
+    assert result["verdict"] == "strong_malicious_indicators"
+
+
+def test_score_lookup_escalates_urlhaus_match_alone():
+    sources = {
+        "abuseipdb": {"status": "not_configured"},
+        "virustotal": {"status": "not_configured"},
+        "otx": {"status": "not_configured"},
+        "urlhaus": {"status": "success", "matches": 1},
+        "threatpulse": {"status": "no_match", "mention_count": 0},
+    }
+    correlation = {"status": "no_match", "mention_count": 0, "mentions": []}
+    result = score_lookup(sources, correlation)
+    assert result["verdict"] == "strong_malicious_indicators"
+
+
+def test_score_lookup_does_not_escalate_weak_single_signal():
+    # A lone, modest VT hit with no corroboration and no family/db match
+    # should stay at whatever tier the raw score lands on - the override
+    # exists for strong corroborated evidence, not any positive hit.
+    sources = {
+        "abuseipdb": {"status": "not_configured"},
+        "virustotal": {"status": "success", "malicious": 2, "suspicious": 0, "harmless": 60},
+        "otx": {"status": "not_configured"},
+        "urlhaus": {"status": "no_match"},
+        "threatpulse": {"status": "no_match", "mention_count": 0},
+    }
+    correlation = {"status": "no_match", "mention_count": 0, "mentions": []}
+    result = score_lookup(sources, correlation)
+    assert result["verdict"] != "strong_malicious_indicators"
+    assert not any(r["source"] == "Classification override" for r in result["score_reasons"])
+
+
 def test_score_lookup_no_signal_is_low_confidence():
     sources = {
         "abuseipdb": {"status": "not_configured"},

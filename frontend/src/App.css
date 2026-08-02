@@ -3162,6 +3162,15 @@ a.map-victim-name:hover {
   color: var(--muted);
 }
 
+.ioc-reason-override {
+  border-color: var(--warn);
+  background: rgba(255, 176, 32, 0.08);
+}
+
+.ioc-reason-override .ioc-reason-points {
+  color: var(--warn);
+}
+
 .ioc-provider-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

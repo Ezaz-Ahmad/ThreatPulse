@@ -217,13 +217,16 @@ export default function IOCLookupPanel() {
             <div className="ioc-section">
               <div className="ioc-section-title">Score breakdown</div>
               <ul className="ioc-reason-list">
-                {report.score_reasons.map((r, i) => (
-                  <li key={i}>
-                    <span className="ioc-reason-points">+{r.points}</span>
-                    <span className="ioc-reason-source">{r.source}</span>
-                    <span className="ioc-reason-text">{r.reason}</span>
-                  </li>
-                ))}
+                {report.score_reasons.map((r, i) => {
+                  const isOverride = r.source === "Classification override";
+                  return (
+                    <li key={i} className={isOverride ? "ioc-reason-override" : ""}>
+                      <span className="ioc-reason-points">{r.points > 0 ? `+${r.points}` : "▲"}</span>
+                      <span className="ioc-reason-source">{r.source}</span>
+                      <span className="ioc-reason-text">{r.reason}</span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

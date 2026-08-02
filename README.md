@@ -1,8 +1,8 @@
 <h1 align="center">🛡️ ThreatPulse</h1>
 
 <p align="center">
-  <b>A live, self-updating cyber threat intelligence dashboard.</b><br/>
-  Aggregates security news, CISA advisories, CVEs, exploited-vulnerability data, and ransomware activity into one place — with real-time analytics.
+  <b>A self-updating cyber threat intelligence dashboard.</b><br/>
+  Aggregates security news, CISA advisories, CVEs, exploited-vulnerability data, and ransomware activity into one place — with an IOC lookup tool and built-in analytics.
 </p>
 
 <p align="center">
@@ -55,8 +55,10 @@ volume trends over time.
 - 📊 **Built-in analytics** — news volume, severity distribution, top
   ransomware groups, most-targeted sectors, KEV timeline — charted, not just
   listed
-- ⏱️ **Self-updating** — background scheduler refreshes every source hourly,
-  plus a manual "Refresh Now" button with live progress feedback
+- ⏱️ **Self-updating** — background scheduler refreshes every source hourly
+  (configurable), plus a manual "Refresh Now" button with live progress
+  feedback and explicit "Last ingested / Next refresh" timestamps so it's
+  always clear how current the data is
 - 📡 **Live ticker** — the newest item across all five sources, typed out in
   real time on the landing page, so the dashboard reads as alive rather than
   static
@@ -64,11 +66,13 @@ volume trends over time.
   a consolidated verdict: concurrent reputation checks against AbuseIPDB,
   VirusTotal, AlienVault OTX, and URLhaus (each behind a free, optional API
   key), correlation against ThreatPulse's own ingested news/advisories/
-  ransomware data, an explainable point-based risk score, and recommended
-  next investigation steps — with results cached so repeat lookups are
-  instant
-- ✅ **Tested** — 20+ automated tests (ingestion parsing + API layer), CI
-  runs on every push
+  ransomware data, an explainable point-based risk score with evidence-based
+  escalation (and built-in recognition of known test files like EICAR, so it
+  doesn't cry wolf on a security test), and rule-based, priority-tagged next
+  investigation steps — validated client-side before it ever hits the
+  backend, with results cached so repeat lookups are instant
+- ✅ **Tested** — 57 automated tests (ingestion parsing, scoring/rule engine,
+  and API layer), CI runs on every push
 - 🐳 **Containerized** — one `docker compose up` gets the full stack running
   locally, database included
 
@@ -194,9 +198,10 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-20+ tests cover ingestion parsers (via fixture RSS/JSON, no network needed)
-and the API layer (isolated test database). `.github/workflows/ci.yml` runs
-the full suite plus a frontend production build on every push/PR.
+57 tests cover ingestion parsers (via fixture RSS/JSON, no network needed),
+the IOC scoring/rule engine, and the API layer (isolated test database).
+`.github/workflows/ci.yml` runs the full suite plus a frontend production
+build on every push/PR.
 
 ## Infrastructure & Hosting
 

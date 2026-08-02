@@ -13,6 +13,7 @@ import LiveClock from "../components/LiveClock";
 import CreatorCredit from "../components/CreatorCredit";
 import ScrollButtons from "../components/ScrollButtons";
 import TermHints from "../components/TermHints";
+import IOCLookupPanel from "../components/IOCLookupPanel";
 const AnalyticsPanel = lazy(() => import("../components/AnalyticsPanel"));
 
 const TABS = [
@@ -21,6 +22,7 @@ const TABS = [
   { key: "cves", label: "Recent CVEs" },
   { key: "kev", label: "KEV Catalog" },
   { key: "ransomware", label: "Ransomware Tracker" },
+  { key: "ioc", label: "IOC Lookup" },
   { key: "analytics", label: "Analytics" },
 ];
 
@@ -30,6 +32,7 @@ const TAB_DESCRIPTIONS = {
   cves: "Newly published or updated vulnerabilities from the National Vulnerability Database, sorted by severity so the most urgent issues stand out first.",
   kev: "CISA's Known Exploited Vulnerabilities catalog — flaws confirmed to be under active attack, which is what makes them the highest priority to patch.",
   ransomware: "Recent victim postings pulled from ransomware group leak sites, tracked via ransomware.live.",
+  ioc: "Look up a suspicious IP, domain, URL, or file hash across AbuseIPDB, VirusTotal, and AlienVault OTX, correlated with ThreatPulse's own ingested intelligence.",
 };
 
 // Which glossary terms to surface as hint chips under each tab's
@@ -40,6 +43,7 @@ const TAB_TERMS = {
   cves: ["cve", "cvss", "severity", "nvd"],
   kev: ["kev", "cisa", "dueDate"],
   ransomware: ["ransomware"],
+  ioc: ["ioc"],
 };
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -81,7 +85,7 @@ export default function Home() {
   }, []);
 
   const loadTabData = useCallback(async (currentTab, currentSearch) => {
-    if (currentTab === "analytics") return; // AnalyticsPanel fetches its own data
+    if (currentTab === "analytics" || currentTab === "ioc") return; // these panels fetch their own data
     setLoading(true);
     setError(null);
     try {
@@ -249,7 +253,7 @@ export default function Home() {
       )}
       {tab !== "analytics" && <TermHints terms={TAB_TERMS[tab]} />}
 
-      {tab !== "ransomware" && tab !== "analytics" && (
+      {tab !== "ransomware" && tab !== "analytics" && tab !== "ioc" && (
         <div className="toolbar">
           <input
             placeholder="Search..."
@@ -259,18 +263,19 @@ export default function Home() {
         </div>
       )}
 
-      {tab !== "analytics" && loading && (
+      {tab !== "analytics" && tab !== "ioc" && loading && (
         <div className="loading">
           <SkeletonLoader rows={tab === "kev" || tab === "cves" || tab === "ransomware" ? 6 : 4} />
         </div>
       )}
-      {tab !== "analytics" && error && <div className="error-state">{error}</div>}
+      {tab !== "analytics" && tab !== "ioc" && error && <div className="error-state">{error}</div>}
 
       {!loading && !error && tab === "news" && <NewsList items={data} />}
       {!loading && !error && tab === "advisories" && <AdvisoryList items={data} />}
       {!loading && !error && tab === "cves" && <CVETable items={data} />}
       {!loading && !error && tab === "kev" && <KEVTable items={data} />}
       {!loading && !error && tab === "ransomware" && <RansomwareTable items={data} />}
+      {tab === "ioc" && <IOCLookupPanel />}
       {tab === "analytics" && (
         <Suspense fallback={<div className="loading">Loading charts…</div>}>
           <AnalyticsPanel />

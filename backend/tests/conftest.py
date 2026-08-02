@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.database import Base, get_db
-from app.routers import news, advisories, cves, kev, ransomware, stats, analytics
+from app.routers import news, advisories, cves, kev, ransomware, stats, analytics, ioc
 
 
 @pytest.fixture()
@@ -39,6 +39,7 @@ def client(db_session):
     test_app.include_router(ransomware.router)
     test_app.include_router(stats.router)
     test_app.include_router(analytics.router)
+    test_app.include_router(ioc.router)
 
     def _get_db_override():
         yield db_session

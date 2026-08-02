@@ -6,6 +6,19 @@ async function get(path) {
   return res.json();
 }
 
+async function post(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    throw new Error(detail?.detail || `Request failed: ${res.status}`);
+  }
+  return res.json();
+}
+
 export const api = {
   stats: () => get("/api/stats"),
   news: (params = "") => get(`/api/news${params}`),
@@ -25,4 +38,6 @@ export const api = {
   topSectors: (limit = 10, days = 90) => get(`/api/analytics/top-sectors?limit=${limit}&days=${days}`),
   kevTimeline: (days = 90) => get(`/api/analytics/kev-timeline?days=${days}`),
   byCountry: () => get("/api/analytics/by-country"),
+  iocLookup: (indicator) => post("/api/ioc/lookup", { indicator }),
+  iocRecent: (limit = 8) => get(`/api/ioc/recent?limit=${limit}`),
 };

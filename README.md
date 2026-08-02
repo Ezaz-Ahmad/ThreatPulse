@@ -60,6 +60,13 @@ volume trends over time.
 - 📡 **Live ticker** — the newest item across all five sources, typed out in
   real time on the landing page, so the dashboard reads as alive rather than
   static
+- 🔍 **IOC Lookup** — paste a suspicious IP, domain, URL, or file hash and get
+  a consolidated verdict: concurrent reputation checks against AbuseIPDB,
+  VirusTotal, AlienVault OTX, and URLhaus (each behind a free, optional API
+  key), correlation against ThreatPulse's own ingested news/advisories/
+  ransomware data, an explainable point-based risk score, and recommended
+  next investigation steps — with results cached so repeat lookups are
+  instant
 - ✅ **Tested** — 20+ automated tests (ingestion parsing + API layer), CI
   runs on every push
 - 🐳 **Containerized** — one `docker compose up` gets the full stack running
@@ -168,6 +175,16 @@ npm run dev
 | `UPDATE_INTERVAL_HOURS` | How often the scheduler re-fetches all sources | `1` |
 | `NVD_API_KEY` | Free key from nvd.nist.gov, raises the CVE API rate limit | _(none)_ |
 | `CVE_LOOKBACK_DAYS` | How many days back to pull modified CVEs | `3` |
+| `ABUSEIPDB_API_KEY` | Free key from abuseipdb.com — powers IOC Lookup's IP reputation check | _(none — provider skipped gracefully)_ |
+| `VIRUSTOTAL_API_KEY` | Free key from virustotal.com — powers IOC Lookup's multi-engine scan results | _(none — provider skipped gracefully)_ |
+| `OTX_API_KEY` | Free key from otx.alienvault.com — powers IOC Lookup's threat-pulse correlation | _(none — provider skipped gracefully)_ |
+| `URLHAUS_AUTH_KEY` | Free "Auth-Key" from auth.abuse.ch — powers IOC Lookup's known-malware-URL check | _(none — provider skipped gracefully)_ |
+| `IOC_CACHE_TTL_MINUTES` | How long an IOC Lookup result stays cached before re-querying | `60` |
+
+IOC Lookup works out of the box with no keys at all — correlation against
+ThreatPulse's own database still runs, and any provider missing a key is
+reported as "not configured" rather than failing the whole lookup. See
+`backend/.env.example`.
 
 ## Testing & CI
 
@@ -229,6 +246,8 @@ Render backend URL).
 | `GET /api/analytics/kev-timeline` | Daily KEV catalog additions (`?days=`) |
 | `GET /api/analytics/by-country` | Ransomware incident counts by country, with top group/sector per country — powers the threat map |
 | `POST /api/refresh` | Trigger an immediate ingestion run |
+| `POST /api/ioc/lookup` | Look up an IOC (`{"indicator": "..."}`) — returns risk score, provider results, correlation, and analyst guidance |
+| `GET /api/ioc/recent` | Recently looked-up indicators (`?limit=`) |
 
 ## Roadmap
 

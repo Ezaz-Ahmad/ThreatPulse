@@ -37,6 +37,11 @@ export const GLOSSARY = {
     definition:
       "The National Vulnerability Database — the U.S. government's public catalog of nearly every published CVE, including scores and descriptions.",
   },
+  ioc: {
+    term: "IOC",
+    definition:
+      "Indicator of Compromise — a piece of forensic evidence (an IP address, domain, URL, or file hash) associated with malicious activity, used to spot or investigate an attack.",
+  },
   dueDate: {
     term: "Remediation Deadline",
     definition:

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Optional
+from typing import Annotated, Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, PlainSerializer
 
 
@@ -75,6 +75,41 @@ class RansomwareOut(BaseModel):
     sector: Optional[str] = None
     published_at: Optional[UTCDatetime] = None
     link: Optional[str] = None
+
+
+class IOCLookupRequest(BaseModel):
+    indicator: str
+
+
+class ScoreReason(BaseModel):
+    source: str
+    points: int
+    reason: str
+
+
+class IOCLookupOut(BaseModel):
+    indicator: str
+    indicator_type: str
+    verdict: str
+    verdict_label: str
+    risk_score: int
+    confidence: str
+    cached: bool
+    fetched_at: Optional[UTCDatetime] = None
+    sources: Dict[str, Any]
+    correlation: Dict[str, Any]
+    score_reasons: List[ScoreReason]
+    analyst_guidance: List[str]
+
+
+class IOCRecentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    indicator: str
+    indicator_type: str
+    risk_score: Optional[int] = None
+    verdict: Optional[str] = None
+    confidence: Optional[str] = None
+    fetched_at: Optional[UTCDatetime] = None
 
 
 class StatsOut(BaseModel):

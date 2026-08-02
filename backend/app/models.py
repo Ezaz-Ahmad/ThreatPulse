@@ -71,6 +71,28 @@ class RansomwareVictim(Base):
     )
 
 
+class IOCLookup(Base):
+    """Cached result of an IOC (Indicator of Compromise) enrichment lookup.
+
+    Results are cached per normalized indicator so repeated lookups (e.g. a
+    SOC analyst re-checking the same IP) don't re-query every provider. See
+    app/ioc/ for validation, provider queries, correlation and scoring.
+    """
+    __tablename__ = "ioc_lookups"
+    id = Column(Integer, primary_key=True, index=True)
+    indicator = Column(String(500), unique=True, index=True)
+    indicator_type = Column(String(20), index=True)  # ipv4, domain, url, hash
+    risk_score = Column(Integer, nullable=True)
+    verdict = Column(String(50), nullable=True)
+    verdict_label = Column(String(80), nullable=True)
+    confidence = Column(String(20), nullable=True)
+    sources_json = Column(Text, nullable=True)
+    score_reasons_json = Column(Text, nullable=True)
+    analyst_guidance_json = Column(Text, nullable=True)
+    correlation_json = Column(Text, nullable=True)
+    fetched_at = Column(DateTime, default=now_utc, index=True)
+
+
 class IngestLog(Base):
     __tablename__ = "ingest_log"
     id = Column(Integer, primary_key=True, index=True)

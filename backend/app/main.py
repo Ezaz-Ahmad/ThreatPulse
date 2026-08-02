@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
 from app.scheduler import start_scheduler, shutdown_scheduler
 from app.ingest.run_all import run_all_ingestion
-from app.routers import news, advisories, cves, kev, ransomware, stats, refresh, analytics
+from app.routers import news, advisories, cves, kev, ransomware, stats, refresh, analytics, ioc
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -43,6 +43,7 @@ app.include_router(ransomware.router)
 app.include_router(stats.router)
 app.include_router(refresh.router)
 app.include_router(analytics.router)
+app.include_router(ioc.router)
 
 
 @app.get("/api/health")

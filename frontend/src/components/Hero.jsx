@@ -12,7 +12,7 @@ const BOOT_LINES = [
   { text: "Connected to 6 threat intelligence sources", tag: "OK" },
   { text: "CISA KEV catalog synced", tag: "OK" },
   { text: "NVD CVE feed online", tag: "OK" },
-  { text: "Monitoring ransomware leak sites", tag: "LIVE" },
+  { text: "Monitoring ransomware leak sites", tag: "AUTO" },
 ];
 
 const HEADLINE_REFRESH_MS = 5 * 60 * 1000; // re-fetch every 5 min — this just re-reads our own API, not the upstream sources, so it's cheap to poll often and keeps the ticker as current as the backend's own data
@@ -227,7 +227,7 @@ export default function Hero() {
     <section className="hero">
       <div className="hero-eyebrow">
         <span className="pulse-dot" />
-        Live Threat Intelligence
+        Automated Threat Intelligence
       </div>
 
       <h1 className="hero-title">
@@ -259,7 +259,7 @@ export default function Hero() {
             <div className="hero-ticker">
               <div className="hero-ticker-label">
                 <span className="pulse-dot" />
-                Live threat feed
+                Latest threat feed
               </div>
               {current.link ? (
                 <a

@@ -14,6 +14,7 @@ import CreatorCredit from "../components/CreatorCredit";
 import ScrollButtons from "../components/ScrollButtons";
 import TermHints from "../components/TermHints";
 import IOCLookupPanel from "../components/IOCLookupPanel";
+import { nextRefreshEstimate } from "../utils/refresh";
 const AnalyticsPanel = lazy(() => import("../components/AnalyticsPanel"));
 
 const TABS = [
@@ -196,7 +197,12 @@ export default function Home() {
         <div className="header-meta">
           <LiveClock />
           {stats?.last_ingest_at && (
-            <span className="last-updated">Data updated: {new Date(stats.last_ingest_at).toLocaleString()}</span>
+            <span className="last-updated">
+              Last ingested {new Date(stats.last_ingest_at).toLocaleString()}
+              {nextRefreshEstimate(stats.last_ingest_at) && (
+                <> · Next refresh ~{nextRefreshEstimate(stats.last_ingest_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</>
+              )}
+            </span>
           )}
           <button
             className={`refresh-btn ${refreshing ? "is-refreshing" : ""} ${justRefreshed ? "is-done" : ""}`}

@@ -7,6 +7,7 @@ import CountryDirectory from "../components/CountryDirectory";
 import ScrollButtons from "../components/ScrollButtons";
 import CreatorCredit from "../components/CreatorCredit";
 import { GENERAL_MITIGATIONS } from "../data/mitigationGuidance";
+import { nextRefreshEstimate } from "../utils/refresh";
 
 const VICTIM_PAGE_SIZE = 20;
 
@@ -173,20 +174,29 @@ export default function MapPage() {
           <div className="about-intro">
             <div className="hero-eyebrow">
               <span className="pulse-dot" />
-              Live Threat Intelligence
+              Automated Threat Intelligence
             </div>
             <h1 className="about-title">Global Ransomware Activity</h1>
             <p className="about-lede">
-              Every ransomware victim ThreatPulse tracks is geotagged by country as it's published to
-              leak sites. This map plots that activity live, so you can see where attacks are
-              concentrated right now instead of piecing it together from headlines.
+              Ransomware victims are geotagged by country when leak-site postings include that data —
+              not every source records one, so this map reflects the subset of tracked victims that
+              could be located, not the full victim count. It plots that activity as it's ingested, so
+              you can see where attacks are concentrated without piecing it together from headlines.
             </p>
             {totals && (
               <div className="map-summary-stats">
-                <span><strong>{totals.incidents}</strong> incidents tracked</span>
-                <span><strong>{totals.countries}</strong> countries affected</span>
+                <span>
+                  <strong>{totals.incidents.toLocaleString()}</strong>
+                  {stats?.total_ransomware ? ` of ${stats.total_ransomware.toLocaleString()}` : ""} records geolocated
+                </span>
+                <span><strong>{totals.countries}</strong> countries &amp; territories affected</span>
                 {stats?.last_ingest_at && (
-                  <span>Data updated {new Date(stats.last_ingest_at).toLocaleString()}</span>
+                  <span>
+                    Last ingested {new Date(stats.last_ingest_at).toLocaleString()}
+                    {nextRefreshEstimate(stats.last_ingest_at) && (
+                      <> · Next refresh ~{nextRefreshEstimate(stats.last_ingest_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</>
+                    )}
+                  </span>
                 )}
               </div>
             )}
@@ -373,7 +383,7 @@ export default function MapPage() {
                 <div className="map-advisories-card">
                   <h4>
                     Vulnerabilities To Patch Now
-                    <span className="map-live-tag"><span className="pulse-dot" />Live</span>
+                    <span className="map-live-tag"><span className="pulse-dot" />Auto-updating</span>
                     <span className="map-guidance-tag">Worldwide, not per-country</span>
                   </h4>
                   <p className="map-guidance-note">
@@ -412,7 +422,7 @@ export default function MapPage() {
                 <div className="map-advisories-card">
                   <h4>
                     Latest Official Advisories
-                    <span className="map-live-tag"><span className="pulse-dot" />Live</span>
+                    <span className="map-live-tag"><span className="pulse-dot" />Auto-updating</span>
                     <span className="map-guidance-tag">Worldwide, not per-country</span>
                   </h4>
                   <p className="map-guidance-note">

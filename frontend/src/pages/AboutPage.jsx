@@ -59,7 +59,7 @@ const BENEFITS = [
   },
   {
     tag: "Students & Security Enthusiasts",
-    title: "A live view of the real threat landscape",
+    title: "A current view of the real threat landscape",
     body: "Free to browse, no login — a practical way to see what current CVEs, advisories, and ransomware activity actually look like, instead of only reading about them.",
   },
 ];
@@ -96,8 +96,8 @@ export default function AboutPage() {
             </p>
             <p className="about-lede">
               It started as a way to go beyond tutorial projects: a real ingestion pipeline
-              pulling from live public sources, a production-style deployment across three
-              cloud services, and an interface built to be read quickly under pressure —
+              pulling from real public sources on an automated schedule, a production-style
+              deployment across three cloud services, and an interface built to be read quickly under pressure —
               the kind of system a security team would actually want open on a second monitor.
             </p>
           </div>

@@ -7,21 +7,35 @@ import ScrollButtons from "../components/ScrollButtons";
 const FEATURES = [
   {
     n: "01",
-    title: "Real-time aggregation",
-    body: "Pulls from six news outlets, CISA advisories, the NVD, the KEV catalog, and ransomware leak sites — refreshed on a schedule, no manual checking required.",
+    title: "IOC Lookup",
+    body: "Paste a suspicious IP, domain, URL, or file hash and get one consolidated verdict — cross-referenced across VirusTotal, AbuseIPDB, AlienVault OTX, and URLhaus, correlated against ThreatPulse's own ingested intelligence, and paired with an explainable score plus rule-based next-step guidance instead of a raw API dump.",
+    highlight: true,
+    tag: "Flagship",
   },
   {
     n: "02",
+    title: "Global Ransomware Map",
+    body: "Ransomware activity plotted by country, with drill-down into each country's most active group, top targeted sector, and recent incidents — leak-site data made scannable at a glance instead of buried in a table.",
+    highlight: true,
+    tag: "Flagship",
+  },
+  {
+    n: "03",
+    title: "Automated threat aggregation",
+    body: "Pulls from six news outlets, CISA advisories, the NVD, the KEV catalog, and ransomware leak sites — refreshed hourly on a schedule, no manual checking required.",
+  },
+  {
+    n: "04",
     title: "Built-in analytics",
     body: "Severity distributions, top ransomware groups, most-targeted sectors, and trend lines — the patterns behind the raw feed, not just a list of items.",
   },
   {
-    n: "03",
+    n: "05",
     title: "Actively-exploited tracking",
     body: "Cross-references CISA's Known Exploited Vulnerabilities catalog so the flaws attackers are already using rise to the top, not just the newest CVEs.",
   },
   {
-    n: "04",
+    n: "06",
     title: "Production engineering",
     body: "Automated tests, CI on every push, a Dockerized local stack, and a real three-tier cloud deployment — built the way a production service would be, not a script.",
   },
@@ -91,7 +105,8 @@ export default function AboutPage() {
           <h2 className="about-section-title">What It Does</h2>
           <div className="about-feature-grid">
             {FEATURES.map((f) => (
-              <div className="feature-card" key={f.n}>
+              <div className={`feature-card${f.highlight ? " feature-card-highlight" : ""}`} key={f.n}>
+                {f.tag && <span className="feature-flagship-badge">{f.tag}</span>}
                 <span className="feature-num">{f.n}</span>
                 <h3>{f.title}</h3>
                 <p>{f.body}</p>

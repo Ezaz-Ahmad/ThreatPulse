@@ -406,6 +406,7 @@ body {
 }
 
 .feature-card {
+  position: relative;
   background: linear-gradient(160deg, var(--panel), var(--panel-2));
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -417,6 +418,36 @@ body {
   border-color: var(--border-bright);
   transform: translateY(-3px);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+/* Flagship features (IOC Lookup, Global Ransomware Map) get a subtle accent
+   treatment so they visually lead the grid instead of blending into the
+   rest of the feature list - these are the two most interactive, most
+   "try it yourself" parts of the project. */
+.feature-card-highlight {
+  border-color: rgba(53, 208, 186, 0.4);
+  background: linear-gradient(160deg, rgba(53, 208, 186, 0.08), var(--panel-2));
+  box-shadow: 0 0 0 1px rgba(53, 208, 186, 0.08), 0 10px 26px rgba(0, 0, 0, 0.3);
+}
+
+.feature-card-highlight:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 24px var(--glow-accent), 0 14px 30px rgba(0, 0, 0, 0.35);
+}
+
+.feature-flagship-badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 3px 9px;
 }
 
 .feature-num {

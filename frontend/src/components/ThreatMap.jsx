@@ -40,6 +40,16 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
   // "was this a click or the end of a drag" without depending on the
   // browser's native click event — see handlePointerUp for why.
   const pressedRef = useRef(null);
+  // Coalesces rapid pointermove events into at most one setView() per
+  // animation frame instead of one per raw event (a mouse can report
+  // dozens of move events a second) — see handlePointerMove for why this
+  // matters.
+  const rafRef = useRef(null);
+  const pendingPointRef = useRef(null);
+
+  useEffect(() => () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +85,25 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
   }, [geo]);
 
   const pathGen = useMemo(() => (projection ? geoPath(projection) : null), [projection]);
+
+  // Panning/zooming only ever changes the <g transform> - the underlying
+  // path geometry never changes with it. Previously pathGen(f) ran inline
+  // inside the JSX .map() below, which recomputed all ~250 country path
+  // strings via d3-geo on *every* render, including every single one
+  // triggered by a drag's pointermove (which can fire dozens of times a
+  // second). That's a genuine perf cliff - sustained dragging could stall
+  // the main thread badly enough to cause visible rendering glitches
+  // (dropped/black frames). Computing this once per geo/projection change
+  // instead of once per pointer event fixes that at the source.
+  const paths = useMemo(() => {
+    if (!geo || !pathGen) return [];
+    return geo.features.map((f, i) => ({
+      key: f.id ?? `feature-${i}`,
+      feature: f,
+      code: ALPHA2_BY_ISO_NUMERIC[f.id],
+      d: pathGen(f),
+    }));
+  }, [geo, pathGen]);
 
   const toViewBoxPoint = useCallback((clientX, clientY) => {
     const rect = svgRef.current.getBoundingClientRect();
@@ -112,11 +141,26 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
 
   const handlePointerMove = useCallback((e) => {
     if (!dragRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const dx = ((e.clientX - dragRef.current.startX) / rect.width) * WIDTH;
-    const dy = ((e.clientY - dragRef.current.startY) / rect.height) * HEIGHT;
-    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) dragRef.current.moved = true;
-    setView((v) => ({ ...v, x: dragRef.current.origX + dx, y: dragRef.current.origY + dy }));
+    // Stash the latest pointer position and, if a frame isn't already
+    // pending, schedule exactly one setView() on the next animation frame.
+    // Without this, a fast/jittery mouse can fire pointermove far more
+    // often than the screen can actually repaint, each one triggering a
+    // full React re-render - previously that also meant recomputing every
+    // country's path geometry (see `paths` above), which together could
+    // stall the main thread badly enough to produce visible black/dropped
+    // frames during a sustained drag.
+    pendingPointRef.current = { clientX: e.clientX, clientY: e.clientY };
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const point = pendingPointRef.current;
+      if (!point || !dragRef.current || !svgRef.current) return;
+      const rect = svgRef.current.getBoundingClientRect();
+      const dx = ((point.clientX - dragRef.current.startX) / rect.width) * WIDTH;
+      const dy = ((point.clientY - dragRef.current.startY) / rect.height) * HEIGHT;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) dragRef.current.moved = true;
+      setView((v) => ({ ...v, x: dragRef.current.origX + dx, y: dragRef.current.origY + dy }));
+    });
   }, []);
 
   // Selection is decided here rather than via a native onClick on each
@@ -129,6 +173,10 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
   // pointer move enough to count as a drag" ourselves sidesteps that
   // entirely and works the same across mouse, touch, and pen.
   const handlePointerUp = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     const drag = dragRef.current;
     const code = pressedRef.current;
     if (drag && !drag.moved && code) {
@@ -181,8 +229,7 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
               Loading map…
             </text>
           )}
-          {geo?.features.map((f, i) => {
-            const code = ALPHA2_BY_ISO_NUMERIC[f.id];
+          {paths.map(({ key, code, d }) => {
             const entry = code ? byAlpha2.get(code) : null;
             const intensity = entry ? Math.max(0.14, Math.sqrt(entry.count / maxCount)) : 0;
             return (
@@ -190,9 +237,9 @@ export default function ThreatMap({ data, selected, onSelectCountry }) {
                 // A handful of small/unrecognized territories in the 110m
                 // atlas have no numeric "id" at all, which would otherwise
                 // collide on key={undefined} — fall back to the index for
-                // just those.
-                key={f.id ?? `feature-${i}`}
-                d={pathGen(f)}
+                // just those (handled when `paths` is built).
+                key={key}
+                d={d}
                 className={`map-country ${entry ? "has-data" : ""} ${selected === code ? "is-selected" : ""}`}
                 style={entry ? { "--intensity": intensity } : undefined}
                 onMouseMove={(e) => (entry ? showHoverFor(code, entry, e) : setHover(null))}

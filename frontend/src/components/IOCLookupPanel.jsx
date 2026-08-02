@@ -200,15 +200,37 @@ export default function IOCLookupPanel() {
           </div>
 
           <div className="ioc-score-row">
-            <RadialProgress pct={report.risk_score} color={VERDICT_COLOR[report.verdict] || "var(--accent)"} size={76} />
+            {report.verdict === "security_test_artifact" ? (
+              <RadialProgress
+                pct={report.risk_score}
+                color={VERDICT_COLOR[report.verdict] || "var(--accent)"}
+                size={76}
+                centerText="N/A"
+                ariaLabel="Not applicable — known test artifact, not a risk score"
+              />
+            ) : (
+              <RadialProgress pct={report.risk_score} color={VERDICT_COLOR[report.verdict] || "var(--accent)"} size={76} />
+            )}
             <div className="ioc-score-details">
               <div className="ioc-verdict" style={{ color: VERDICT_COLOR[report.verdict] || "var(--text)" }}>
                 {report.verdict_label}
-                <HelpTip title="ThreatPulse risk score">
-                  This is a ThreatPulse prioritisation score built from provider
-                  reputation data and internal correlation — not proof the
-                  indicator is malicious. Always validate against internal
-                  evidence before acting on it.
+                <HelpTip title={report.verdict === "security_test_artifact" ? "Why this shows N/A" : "ThreatPulse risk score"}>
+                  {report.verdict === "security_test_artifact" ? (
+                    <>
+                      A percentage here would look like a risk score, but it isn't
+                      one — every AV/EDR engine is designed to flag this file on
+                      purpose. The raw provider detection rate ({report.risk_score}%)
+                      is still shown in the score breakdown below for transparency,
+                      it's just not meaningful as a "how malicious is this" number.
+                    </>
+                  ) : (
+                    <>
+                      This is a ThreatPulse prioritisation score built from provider
+                      reputation data and internal correlation — not proof the
+                      indicator is malicious. Always validate against internal
+                      evidence before acting on it.
+                    </>
+                  )}
                 </HelpTip>
               </div>
               <div className="ioc-confidence">Confidence: <strong>{report.confidence}</strong></div>

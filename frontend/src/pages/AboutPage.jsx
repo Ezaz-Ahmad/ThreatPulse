@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import "../App.css";
 import CreatorCredit from "../components/CreatorCredit";
 import ScrollButtons from "../components/ScrollButtons";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 const FEATURES = [
   {
@@ -65,6 +66,7 @@ const BENEFITS = [
 ];
 
 export default function AboutPage() {
+  usePageTitle("About — ThreatPulse");
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);

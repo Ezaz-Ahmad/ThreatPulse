@@ -15,6 +15,7 @@ import ScrollButtons from "../components/ScrollButtons";
 import TermHints from "../components/TermHints";
 import IOCLookupPanel from "../components/IOCLookupPanel";
 import { nextRefreshEstimate } from "../utils/refresh";
+import { usePageTitle } from "../hooks/usePageTitle";
 const AnalyticsPanel = lazy(() => import("../components/AnalyticsPanel"));
 
 const TABS = [
@@ -52,6 +53,7 @@ const POLL_INTERVAL_MS = 5000;
 const MAX_POLL_ATTEMPTS = 30; // ~2.5 minutes of polling before giving up
 
 export default function Home() {
+  usePageTitle("ThreatPulse — Live Cyber Threat Intelligence");
   const [tab, setTab] = useState("news");
   const [stats, setStats] = useState(null);
   const [data, setData] = useState([]);
@@ -193,7 +195,10 @@ export default function Home() {
       <Hero />
       <div className="app" id="dashboard">
       <div className="app-header">
-        <h1>Threat<span>Pulse</span></h1>
+        {/* Hero already renders the page's one true <h1> ("ThreatPulse") -
+            this is a secondary section heading for the dashboard area, so
+            it's an h2 sharing the same visual style rather than a second h1. */}
+        <h2>Threat<span>Pulse</span></h2>
         <div className="header-meta">
           <LiveClock />
           {stats?.last_ingest_at && (
@@ -262,9 +267,11 @@ export default function Home() {
       {tab !== "ransomware" && tab !== "analytics" && tab !== "ioc" && (
         <div className="toolbar">
           <input
+            type="search"
             placeholder="Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label={`Search ${TABS.find((t) => t.key === tab)?.label || "results"}`}
           />
         </div>
       )}

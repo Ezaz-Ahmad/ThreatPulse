@@ -4,7 +4,28 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="ThreatPulse — a live, self-updating cyber threat intelligence dashboard." />
+    <meta name="description" content="ThreatPulse — a live, self-updating cyber threat intelligence dashboard aggregating security news, CVEs, CISA advisories, KEV tracking, and a global ransomware map." />
+    <link rel="canonical" href="https://threat-pulse-phi.vercel.app/" />
+
+    <!-- Open Graph / Twitter card - note this is a client-rendered SPA with a
+         single static index.html, so these tags are necessarily the same for
+         every route (/, /map, /about). Per-route social previews would need
+         server-side rendering or per-route prerendering, which is out of
+         scope here - this covers the common case of the root URL being
+         shared/linked. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ThreatPulse" />
+    <meta property="og:title" content="ThreatPulse — Live Cyber Threat Intelligence" />
+    <meta property="og:description" content="A live, self-updating cyber threat intelligence dashboard — security news, CVEs, CISA advisories, KEV tracking, IOC lookup, and a global ransomware map, all in one place." />
+    <meta property="og:url" content="https://threat-pulse-phi.vercel.app/" />
+    <meta property="og:image" content="https://threat-pulse-phi.vercel.app/social-preview.png" />
+    <meta property="og:image:width" content="2518" />
+    <meta property="og:image:height" content="1336" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ThreatPulse — Live Cyber Threat Intelligence" />
+    <meta name="twitter:description" content="A live, self-updating cyber threat intelligence dashboard — security news, CVEs, CISA advisories, KEV tracking, IOC lookup, and a global ransomware map, all in one place." />
+    <meta name="twitter:image" content="https://threat-pulse-phi.vercel.app/social-preview.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />

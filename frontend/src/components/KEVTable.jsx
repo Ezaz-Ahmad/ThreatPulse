@@ -108,10 +108,25 @@ export default function KEVTable({ items }) {
               style={{ animationDelay: `${Math.min(i, 12) * 0.04}s`, "--severity-color": isRansomware ? "var(--danger)" : "var(--accent-2)" }}
             >
               <div className="item-card-head">
-                <span className="item-title">{k.vulnerability_name}</span>
+                <a
+                  href={`https://nvd.nist.gov/vuln/detail/${k.cve_id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="item-title"
+                >
+                  {k.vulnerability_name}
+                </a>
               </div>
               <div className="item-meta">
-                <span className="badge source">{k.cve_id}</span>
+                <a
+                  href={`https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=${encodeURIComponent(k.cve_id)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="badge source"
+                  title="View in CISA's KEV catalog"
+                >
+                  {k.cve_id}
+                </a>
                 <span>{k.vendor_project}{k.product ? ` / ${k.product}` : ""}</span>
               </div>
               <div className="item-meta">

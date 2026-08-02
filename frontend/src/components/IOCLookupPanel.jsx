@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import RadialProgress from "./viz/RadialProgress";
 import HelpTip from "./HelpTip";
+import { identifyIocClient } from "../utils/iocValidate";
 
 const PROVIDER_LABELS = {
   abuseipdb: "AbuseIPDB",
@@ -91,6 +92,14 @@ export default function IOCLookupPanel() {
   const [error, setError] = useState(null);
   const [report, setReport] = useState(null);
   const [recent, setRecent] = useState([]);
+  const [touched, setTouched] = useState(false);
+
+  // Instant, browser-side format check — mirrors the backend's own validator
+  // so obviously-invalid input never has to make a round trip just to be
+  // told "no". The backend still gets the final say on anything this lets
+  // through.
+  const validation = useMemo(() => identifyIocClient(indicator), [indicator]);
+  const showFormatError = touched && !validation.valid && !validation.empty;
 
   const loadRecent = useCallback(async () => {
     try {
@@ -107,6 +116,13 @@ export default function IOCLookupPanel() {
   const runLookup = useCallback(async (value) => {
     const trimmed = (value ?? indicator).trim();
     if (!trimmed) return;
+    const check = identifyIocClient(trimmed);
+    if (!check.valid) {
+      setTouched(true);
+      setError(check.reason || "That doesn't look like a valid indicator.");
+      setReport(null);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -135,17 +151,31 @@ export default function IOCLookupPanel() {
     <div className="ioc-panel">
       <form className="ioc-search" onSubmit={handleSubmit}>
         <input
-          className="ioc-input"
+          className={`ioc-input ${showFormatError ? "ioc-input-invalid" : ""}`}
           placeholder="Paste an IP, domain, URL, or file hash…"
+          aria-label="Indicator to look up (IP address, domain, URL, or file hash)"
+          aria-invalid={showFormatError}
           value={indicator}
-          onChange={(e) => setIndicator(e.target.value)}
+          onChange={(e) => {
+            setIndicator(e.target.value);
+            if (error) setError(null);
+          }}
+          onBlur={() => setTouched(true)}
           spellCheck={false}
           autoComplete="off"
         />
-        <button type="submit" className="ioc-submit" disabled={loading || !indicator.trim()}>
+        <button
+          type="submit"
+          className="ioc-submit"
+          disabled={loading || !indicator.trim() || (touched && !validation.valid)}
+        >
           {loading ? "Looking up…" : "Look up"}
         </button>
       </form>
+
+      {showFormatError && !error && (
+        <div className="error-state ioc-format-error">{validation.reason}</div>
+      )}
 
       {error && <div className="error-state">{error}</div>}
 

@@ -56,9 +56,10 @@ export default function CountryDirectory({ data, selected, onSelectCountry }) {
       </div>
 
       <input
-        type="text"
+        type="search"
         className="country-directory-search"
         placeholder="Search countries…"
+        aria-label="Search countries"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />

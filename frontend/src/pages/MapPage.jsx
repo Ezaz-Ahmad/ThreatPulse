@@ -8,6 +8,7 @@ import ScrollButtons from "../components/ScrollButtons";
 import CreatorCredit from "../components/CreatorCredit";
 import { GENERAL_MITIGATIONS } from "../data/mitigationGuidance";
 import { nextRefreshEstimate } from "../utils/refresh";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 const VICTIM_PAGE_SIZE = 20;
 
@@ -43,6 +44,7 @@ function DueBadge({ dueDate }) {
 }
 
 export default function MapPage() {
+  usePageTitle("Global Ransomware Map — ThreatPulse");
   // Hero's "Global Threat Map" CTA prefetches this same data and passes it
   // along via router state so the map paints immediately on arrival instead
   // of rendering an empty map for the beat it takes to re-fetch. Direct
@@ -67,7 +69,7 @@ export default function MapPage() {
   }, []);
 
   useEffect(() => {
-    api.byCountry().then(setCountries).catch(() => setError("Could not load map data. Is the backend running?"));
+    api.byCountry({ onUpdate: setCountries }).then(setCountries).catch(() => setError("Could not load map data. Is the backend running?"));
     api.stats().then(setStats).catch(() => {});
     // Real, live source for mitigation content: CISA's own advisory feed
     // (the same one that already powers the CISA Advisories tab) includes
@@ -183,7 +185,7 @@ export default function MapPage() {
               could be located, not the full victim count. It plots that activity as it's ingested, so
               you can see where attacks are concentrated without piecing it together from headlines.
             </p>
-            {totals && (
+            {totals ? (
               <div className="map-summary-stats">
                 <span>
                   <strong>{totals.incidents.toLocaleString()}</strong>
@@ -199,6 +201,14 @@ export default function MapPage() {
                   </span>
                 )}
               </div>
+            ) : (
+              !error && (
+                <div className="map-summary-stats" aria-hidden="true">
+                  <span className="skeleton-block" style={{ height: 18, width: 210, display: "inline-block" }} />
+                  <span className="skeleton-block" style={{ height: 18, width: 190, display: "inline-block" }} />
+                  <span className="skeleton-block" style={{ height: 18, width: 240, display: "inline-block" }} />
+                </div>
+              )
             )}
           </div>
 
@@ -216,6 +226,10 @@ export default function MapPage() {
                 <div className="map-top-list">
                   <h2 className="about-section-title">Most-Affected Countries</h2>
                   <div className="map-top-grid">
+                    {countries === null &&
+                      Array.from({ length: 8 }).map((_, i) => (
+                        <span key={i} className="skeleton-block map-top-item-skeleton" aria-hidden="true" />
+                      ))}
                     {topCountries.map((c) => (
                       <button
                         type="button"

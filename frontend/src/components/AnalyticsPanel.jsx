@@ -30,14 +30,20 @@ const TOOLTIP_LABEL_STYLE = { color: "#d7e1ea", marginBottom: 4, fontWeight: 600
 const NBSP = String.fromCharCode(160);
 const ELLIPSIS = String.fromCharCode(8230);
 
-function ChartCard({ title, accent, children, empty, index = 0 }) {
+function ChartCard({ title, accent, children, empty, loading, skeletonHeight = 220, index = 0 }) {
   return (
     <div className="chart-card" style={{ "--card-accent": accent, animationDelay: `${index * 0.08}s` }}>
       <div className="chart-title">
         <span className="chart-title-dot" style={{ background: accent, boxShadow: `0 0 8px ${accent}` }} />
         {title}
       </div>
-      {empty ? <div className="empty-state">Not enough data yet.</div> : children}
+      {loading ? (
+        <div className="skeleton-block" style={{ height: skeletonHeight }} />
+      ) : empty ? (
+        <div className="empty-state">Not enough data yet.</div>
+      ) : (
+        children
+      )}
     </div>
   );
 }
@@ -101,12 +107,16 @@ export default function AnalyticsPanel() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Each call may resolve instantly from cache (see api.js's
+    // stale-while-revalidate wrapper); `onUpdate` lets a card that painted
+    // from stale cache quietly swap in fresher data once the background
+    // refetch completes, without re-showing a loading state.
     Promise.all([
-      api.newsVolume(30),
-      api.severityDistribution(),
-      api.topRansomwareGroups(),
-      api.topSectors(),
-      api.kevTimeline(90),
+      api.newsVolume(30, { onUpdate: setNewsVolume }),
+      api.severityDistribution({ onUpdate: setSeverity }),
+      api.topRansomwareGroups(10, 90, { onUpdate: setTopGroups }),
+      api.topSectors(10, 90, { onUpdate: setTopSectors }),
+      api.kevTimeline(90, { onUpdate: setKevTimeline }),
     ])
       .then(([nv, sev, groups, sectors, kev]) => {
         setNewsVolume(nv);
@@ -122,7 +132,7 @@ export default function AnalyticsPanel() {
 
   return (
     <div className="analytics-grid">
-      <ChartCard title="News volume (last 30 days)" accent={ACCENT} index={0} empty={newsVolume && newsVolume.every((d) => d.count === 0)}>
+      <ChartCard title="News volume (last 30 days)" accent={ACCENT} index={0} loading={newsVolume === null} empty={newsVolume && newsVolume.every((d) => d.count === 0)}>
         {newsVolume && (
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={newsVolume} margin={{ top: 6, right: 12, left: -12, bottom: 0 }}>
@@ -142,7 +152,7 @@ export default function AnalyticsPanel() {
         )}
       </ChartCard>
 
-      <ChartCard title="CVE severity distribution" accent="#ffb454" index={1} empty={severity && severity.length === 0}>
+      <ChartCard title="CVE severity distribution" accent="#ffb454" index={1} loading={severity === null} empty={severity && severity.length === 0}>
         {severity && (
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
@@ -172,7 +182,7 @@ export default function AnalyticsPanel() {
         )}
       </ChartCard>
 
-      <ChartCard title="Top ransomware groups (last 90 days)" accent="#ff5d5d" index={2} empty={topGroups && topGroups.length === 0}>
+      <ChartCard title="Top ransomware groups (last 90 days)" accent="#ff5d5d" index={2} loading={topGroups === null} skeletonHeight={barChartHeight(topGroups)} empty={topGroups && topGroups.length === 0}>
         {topGroups && (
           <ResponsiveContainer width="100%" height={barChartHeight(topGroups)}>
             <BarChart data={topGroups} layout="vertical" margin={{ top: 4, right: 20, left: 0, bottom: 0 }} barCategoryGap="28%">
@@ -202,7 +212,7 @@ export default function AnalyticsPanel() {
         )}
       </ChartCard>
 
-      <ChartCard title="Most-targeted sectors (last 90 days)" accent="#4fc3f7" index={3} empty={topSectors && topSectors.length === 0}>
+      <ChartCard title="Most-targeted sectors (last 90 days)" accent="#4fc3f7" index={3} loading={topSectors === null} skeletonHeight={barChartHeight(topSectors)} empty={topSectors && topSectors.length === 0}>
         {topSectors && (
           <ResponsiveContainer width="100%" height={barChartHeight(topSectors)}>
             <BarChart data={topSectors} layout="vertical" margin={{ top: 4, right: 20, left: 0, bottom: 0 }} barCategoryGap="28%">
@@ -232,7 +242,7 @@ export default function AnalyticsPanel() {
         )}
       </ChartCard>
 
-      <ChartCard title="KEV catalog additions (last 90 days)" accent="#ffb454" index={4} empty={kevTimeline && kevTimeline.every((d) => d.count === 0)}>
+      <ChartCard title="KEV catalog additions (last 90 days)" accent="#ffb454" index={4} loading={kevTimeline === null} empty={kevTimeline && kevTimeline.every((d) => d.count === 0)}>
         {kevTimeline && (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={kevTimeline} margin={{ top: 6, right: 12, left: -12, bottom: 0 }}>

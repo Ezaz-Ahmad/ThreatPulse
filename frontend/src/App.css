@@ -3253,6 +3253,31 @@ a.map-victim-name:hover {
   font-family: var(--font-mono);
 }
 
+.ioc-guidance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ioc-priority-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.ioc-priority-high { background: rgba(255, 93, 93, 0.12); color: var(--danger); border-color: rgba(255, 93, 93, 0.35); box-shadow: 0 0 10px rgba(255, 93, 93, 0.12); }
+.ioc-priority-medium { background: rgba(255, 180, 84, 0.12); color: var(--warn); border-color: rgba(255, 180, 84, 0.35); }
+.ioc-priority-low { background: rgba(79, 195, 247, 0.12); color: var(--accent-2); border-color: rgba(79, 195, 247, 0.3); }
+.ioc-priority-none { background: rgba(110, 231, 183, 0.12); color: var(--ok); border-color: rgba(110, 231, 183, 0.3); }
+
 .ioc-guidance-list li {
   font-size: 13px;
   padding: 8px 12px 8px 30px;
@@ -3269,6 +3294,15 @@ a.map-victim-name:hover {
   left: 12px;
   color: var(--accent);
   font-weight: 700;
+}
+
+.ioc-guidance-list-short li {
+  color: var(--muted);
+}
+
+.ioc-guidance-list-short li::before {
+  content: "✓";
+  color: var(--ok);
 }
 
 .ioc-disclaimer {

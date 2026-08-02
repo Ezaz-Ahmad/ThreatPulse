@@ -51,12 +51,20 @@ def correlate(db: Session, indicator: str) -> dict:
             "title": f"{r.group_name} — {r.victim_name}",
             "link": r.link,
             "published_at": r.published_at,
+            "group_name": r.group_name,
         }
         for r in ransomware_matches
     ]
+
+    # Surfaced separately (not just buried in `mentions`) so the recommendation
+    # rule engine can key group-specific guidance - e.g. an indicator tied to
+    # a LockBit posting should suggest checking for VSS deletion and backup
+    # tampering, which is meaningless for an indicator with no ransomware tie.
+    ransomware_groups = sorted({r.group_name for r in ransomware_matches if r.group_name})
 
     return {
         "status": "success" if mentions else "no_match",
         "mention_count": len(mentions),
         "mentions": mentions,
+        "ransomware_groups": ransomware_groups,
     }

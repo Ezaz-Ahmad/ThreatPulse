@@ -21,7 +21,8 @@ from app.schemas import IOCLookupOut, IOCLookupRequest, IOCRecentOut
 from app.ioc.validators import identify_ioc, InvalidIOCError
 from app.ioc.providers import query_all
 from app.ioc.correlate import correlate
-from app.ioc.scoring import score_lookup, analyst_guidance_for
+from app.ioc.scoring import score_lookup
+from app.ioc.rules import generate_recommendations, priority_for_verdict
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,18 @@ def _stringify_dates(obj):
     return obj
 
 
+def _parse_guidance(raw_json: str, verdict: str) -> dict:
+    """Parse the stored analyst_guidance JSON, tolerating the pre-rule-engine
+    format (a flat list of strings) for rows cached before this feature
+    shipped - those get wrapped into the new {priority, actions} shape
+    instead of breaking on the next cache read.
+    """
+    parsed = json.loads(raw_json or "[]")
+    if isinstance(parsed, list):
+        return {"priority": priority_for_verdict(verdict), "actions": parsed}
+    return parsed
+
+
 def _row_to_report(row: IOCLookup, cached: bool) -> dict:
     return {
         "indicator": row.indicator,
@@ -55,7 +68,7 @@ def _row_to_report(row: IOCLookup, cached: bool) -> dict:
         "sources": json.loads(row.sources_json or "{}"),
         "correlation": json.loads(row.correlation_json or "{}"),
         "score_reasons": json.loads(row.score_reasons_json or "[]"),
-        "analyst_guidance": json.loads(row.analyst_guidance_json or "[]"),
+        "analyst_guidance": _parse_guidance(row.analyst_guidance_json, row.verdict),
     }
 
 
@@ -80,7 +93,7 @@ def lookup_ioc(payload: IOCLookupRequest, db: Session = Depends(get_db)):
     }
 
     scored = score_lookup(sources, correlation)
-    guidance = analyst_guidance_for(indicator_type)
+    guidance = generate_recommendations(indicator_type, scored["verdict"], sources, correlation)
     fetched_at = datetime.now(timezone.utc)
 
     if existing:

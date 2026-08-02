@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 import pytest
 
 from app.ioc.validators import identify_ioc, InvalidIOCError
-from app.ioc.scoring import score_lookup, analyst_guidance_for
+from app.ioc.scoring import score_lookup
+from app.ioc.rules import generate_recommendations, priority_for_verdict
 from app.ioc import providers
 from app.models import NewsItem
 from app.routers import ioc as ioc_router
@@ -110,10 +111,94 @@ def test_urlhaus_supports_md5_and_sha256_not_sha1(monkeypatch):
     assert result["status"] == "unsupported_type"
 
 
-def test_analyst_guidance_for_hash_subtypes_uses_hash_template():
-    for sub in ("md5", "sha1", "sha256"):
-        guidance = analyst_guidance_for(sub)
-        assert any("hash" in g.lower() for g in guidance)
+def _sources(**overrides):
+    base = {
+        "abuseipdb": {"status": "not_configured"},
+        "virustotal": {"status": "not_configured"},
+        "otx": {"status": "not_configured"},
+        "urlhaus": {"status": "no_match"},
+        "threatpulse": {"status": "no_match", "mention_count": 0},
+    }
+    base.update(overrides)
+    return base
+
+
+def _correlation(**overrides):
+    base = {"status": "no_match", "mention_count": 0, "mentions": [], "ransomware_groups": []}
+    base.update(overrides)
+    return base
+
+
+# ------------------------------------------------- recommendation rule engine
+
+def test_priority_for_verdict_matches_scoring_tiers():
+    assert priority_for_verdict("strong_malicious_indicators") == "high"
+    assert priority_for_verdict("moderate_risk_indicators") == "medium"
+    assert priority_for_verdict("low_risk_indicators") == "low"
+    assert priority_for_verdict("no_significant_indicators") == "none"
+
+
+def test_ip_high_priority_leads_with_firewall_guidance():
+    result = generate_recommendations("ipv4", "strong_malicious_indicators", _sources(), _correlation())
+    assert result["priority"] == "high"
+    assert any("firewall" in a.lower() for a in result["actions"])
+
+
+def test_domain_high_priority_leads_with_dns_not_firewall():
+    result = generate_recommendations("domain", "strong_malicious_indicators", _sources(), _correlation())
+    assert result["priority"] == "high"
+    assert "dns" in result["actions"][0].lower()
+    assert not any("firewall" in a.lower() for a in result["actions"])
+
+
+def test_hash_high_priority_leads_with_edr_guidance():
+    result = generate_recommendations("sha256", "strong_malicious_indicators", _sources(), _correlation())
+    assert result["priority"] == "high"
+    assert any("edr" in a.lower() for a in result["actions"])
+
+
+def test_benign_result_gets_short_no_action_message():
+    result = generate_recommendations("ipv4", "no_significant_indicators", _sources(), _correlation())
+    assert result["priority"] == "none"
+    assert result["actions"] == [
+        "No immediate action required.",
+        "Continue normal monitoring.",
+        "Validate against your internal environment if this IP appears unexpectedly.",
+    ]
+
+
+def test_hash_lookup_with_malware_family_adds_family_specific_actions():
+    sources = _sources(virustotal={"status": "success", "malicious": 63, "suspicious": 0, "harmless": 8, "malware_family": "Lumma Stealer"})
+    result = generate_recommendations("sha256", "strong_malicious_indicators", sources, _correlation())
+    joined = " ".join(result["actions"]).lower()
+    assert "lumma stealer" in joined
+    assert "credential" in joined
+
+
+def test_ransomware_group_correlation_adds_group_specific_actions():
+    correlation = _correlation(status="success", mention_count=1, ransomware_groups=["LockBit"])
+    result = generate_recommendations("ipv4", "strong_malicious_indicators", _sources(), correlation)
+    joined = " ".join(result["actions"]).lower()
+    assert "lockbit" in joined
+    assert "vss" in joined or "volume shadow copy" in joined
+
+
+def test_unrecognized_ransomware_group_still_gets_generic_guidance():
+    correlation = _correlation(status="success", mention_count=1, ransomware_groups=["SomeNewGroup2026"])
+    result = generate_recommendations("domain", "moderate_risk_indicators", _sources(), correlation)
+    joined = " ".join(result["actions"]).lower()
+    assert "somenewgroup2026" in joined
+    assert "backup" in joined
+
+
+def test_benign_result_ignores_family_and_group_signals():
+    # A clean/no-signal verdict shouldn't get padded with hypothetical
+    # family/group guidance even if those fields happen to be populated.
+    sources = _sources(virustotal={"status": "no_match", "malicious": 0, "suspicious": 0, "harmless": 70, "malware_family": "Lumma Stealer"})
+    correlation = _correlation(ransomware_groups=["LockBit"])
+    result = generate_recommendations("sha256", "no_significant_indicators", sources, correlation)
+    assert result["priority"] == "none"
+    assert not any("lumma" in a.lower() or "lockbit" in a.lower() for a in result["actions"])
 
 
 # --------------------------------------------------------------- scoring
@@ -169,7 +254,8 @@ def test_lookup_endpoint_returns_report(client, db_session, monkeypatch):
     assert body["cached"] is False
     assert body["risk_score"] > 0
     assert body["sources"]["abuseipdb"]["abuse_confidence_score"] == 92
-    assert "analyst_guidance" in body and len(body["analyst_guidance"]) > 0
+    assert body["analyst_guidance"]["priority"] == "high"
+    assert len(body["analyst_guidance"]["actions"]) > 0
 
 
 def test_lookup_endpoint_uses_cache_on_second_call(client, db_session, monkeypatch):
@@ -208,6 +294,36 @@ def test_lookup_correlates_with_ingested_news(client, db_session, monkeypatch):
     body = resp.json()
     assert body["correlation"]["mention_count"] == 1
     assert body["sources"]["threatpulse"]["mention_count"] == 1
+
+
+def test_cached_lookup_tolerates_pre_rule_engine_flat_list_format(client, db_session):
+    # Simulate a row cached before the rule engine shipped, when
+    # analyst_guidance_json stored a flat list of strings rather than
+    # {"priority": ..., "actions": [...]}.
+    from app.models import IOCLookup
+    import json as json_module
+
+    db_session.add(IOCLookup(
+        indicator="203.0.113.9",
+        indicator_type="ipv4",
+        risk_score=85,
+        verdict="strong_malicious_indicators",
+        verdict_label="Strong malicious indicators",
+        confidence="high",
+        sources_json="{}",
+        score_reasons_json="[]",
+        analyst_guidance_json=json_module.dumps(["Old-format action line."]),
+        correlation_json="{}",
+        fetched_at=datetime.now(timezone.utc),
+    ))
+    db_session.commit()
+
+    resp = client.post("/api/ioc/lookup", json={"indicator": "203.0.113.9"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["cached"] is True
+    assert body["analyst_guidance"]["priority"] == "high"
+    assert body["analyst_guidance"]["actions"] == ["Old-format action line."]
 
 
 def test_recent_lookups_endpoint(client, db_session, monkeypatch):

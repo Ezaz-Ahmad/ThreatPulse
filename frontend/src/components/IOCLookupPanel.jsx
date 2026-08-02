@@ -27,6 +27,13 @@ const VERDICT_COLOR = {
   no_significant_indicators: "var(--ok)",
 };
 
+const PRIORITY_META = {
+  high: { label: "High Priority", cls: "ioc-priority-high" },
+  medium: { label: "Medium Priority", cls: "ioc-priority-medium" },
+  low: { label: "Low Priority", cls: "ioc-priority-low" },
+  none: { label: "No Action Needed", cls: "ioc-priority-none" },
+};
+
 function providerDetail(name, result) {
   if (!result) return null;
   switch (name) {
@@ -258,9 +265,16 @@ export default function IOCLookupPanel() {
           )}
 
           <div className="ioc-section">
-            <div className="ioc-section-title">Recommended analyst actions</div>
-            <ul className="ioc-guidance-list">
-              {report.analyst_guidance.map((g, i) => (
+            <div className="ioc-guidance-header">
+              <div className="ioc-section-title">Recommended analyst actions</div>
+              {report.analyst_guidance?.priority && (
+                <span className={`ioc-priority-badge ${PRIORITY_META[report.analyst_guidance.priority]?.cls || ""}`}>
+                  {PRIORITY_META[report.analyst_guidance.priority]?.label || report.analyst_guidance.priority}
+                </span>
+              )}
+            </div>
+            <ul className={`ioc-guidance-list ${report.analyst_guidance?.priority === "none" ? "ioc-guidance-list-short" : ""}`}>
+              {(report.analyst_guidance?.actions || []).map((g, i) => (
                 <li key={i}>{g}</li>
               ))}
             </ul>

@@ -93,10 +93,11 @@ def query_virustotal(indicator: str, indicator_type: str) -> dict:
         if resp.status_code == 404:
             return {"status": "no_match"}
         resp.raise_for_status()
-        stats = resp.json()["data"]["attributes"]["last_analysis_stats"]
+        attributes = resp.json()["data"]["attributes"]
+        stats = attributes["last_analysis_stats"]
         malicious = stats.get("malicious", 0) or 0
         suspicious = stats.get("suspicious", 0) or 0
-        return {
+        result = {
             # VT knowing about the indicator and every engine calling it clean
             # is a real (clean) finding - it's not the same as an engine
             # actually flagging it, which is what "success" should mean here.
@@ -105,6 +106,16 @@ def query_virustotal(indicator: str, indicator_type: str) -> dict:
             "suspicious": suspicious,
             "harmless": stats.get("harmless", 0),
         }
+        # File reports carry a best-guess malware family label - this is what
+        # lets the recommendation engine give family-specific guidance (e.g.
+        # "Lumma Stealer" -> credential-theft actions) instead of generic
+        # hash advice. Not present for IP/domain/URL reports.
+        if indicator_type in ("md5", "sha1", "sha256"):
+            classification = attributes.get("popular_threat_classification") or {}
+            family = classification.get("suggested_threat_label")
+            if family:
+                result["malware_family"] = family
+        return result
     except Exception as exc:  # noqa: BLE001
         logger.warning("VirusTotal lookup failed for %s: %s", indicator, exc)
         return {"status": "error", "detail": str(exc)}

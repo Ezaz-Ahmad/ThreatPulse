@@ -87,6 +87,12 @@ class ScoreReason(BaseModel):
     reason: str
 
 
+class AnalystGuidance(BaseModel):
+    # "high" | "medium" | "low" | "none" - see app/ioc/rules/__init__.py
+    priority: str
+    actions: List[str]
+
+
 class IOCLookupOut(BaseModel):
     indicator: str
     indicator_type: str
@@ -99,7 +105,7 @@ class IOCLookupOut(BaseModel):
     sources: Dict[str, Any]
     correlation: Dict[str, Any]
     score_reasons: List[ScoreReason]
-    analyst_guidance: List[str]
+    analyst_guidance: AnalystGuidance
 
 
 class IOCRecentOut(BaseModel):

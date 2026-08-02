@@ -5,6 +5,11 @@ capped at 100) rather than a black-box model — every point on the score maps
 to one line in `score_reasons`, so an analyst can see exactly why a number
 was assigned instead of trusting it blindly. This mirrors real reputation
 tools (AbuseIPDB, VirusTotal) which score the same way for the same reason.
+
+Recommended analyst actions are handled separately, by app/ioc/rules/ - this
+module only decides *how risky* an indicator looks, not *what to do about
+it*. The two are linked by verdict: rules.priority_for_verdict() maps the
+same verdict keys defined below to a priority tier.
 """
 
 _VERDICTS = [
@@ -12,41 +17,6 @@ _VERDICTS = [
     (40, "moderate_risk_indicators", "Moderate risk indicators"),
     (15, "low_risk_indicators", "Low-confidence indicators"),
     (0, "no_significant_indicators", "No significant indicators found"),
-]
-
-_ACTION_TEMPLATES = {
-    "ipv4": [
-        "Search proxy, firewall and DNS logs for other internal systems communicating with this IP.",
-        "Review the timestamps and transferred data volume for related connections.",
-        "Check affected endpoints for suspicious processes, persistence and authentication activity.",
-        "Consider blocking the indicator only after validating business context and internal evidence.",
-    ],
-    "domain": [
-        "Search DNS and proxy logs for other internal systems resolving or contacting this domain.",
-        "Review the timestamps of related lookups and any data transferred to the domain.",
-        "Check affected endpoints for suspicious processes, persistence and authentication activity.",
-        "Consider blocking the indicator only after validating business context and internal evidence.",
-    ],
-    "url": [
-        "Search proxy and web-gateway logs for other requests to this URL or its host.",
-        "Review the timestamps and any files downloaded from the URL.",
-        "Check affected endpoints for suspicious processes, persistence and authentication activity.",
-        "Consider blocking the indicator only after validating business context and internal evidence.",
-    ],
-    "hash": [
-        "Search EDR/AV logs for other endpoints where this file hash has been observed.",
-        "Review process execution history and parent processes around the time it appeared.",
-        "Check affected endpoints for persistence, lateral movement and authentication activity.",
-        "Consider isolating affected endpoints only after validating business context and internal evidence.",
-    ],
-}
-
-_BASE_GUIDANCE = [
-    "Search internal firewall, proxy and DNS logs",
-    "Identify all systems that contacted the indicator",
-    "Review activity before and after the connection",
-    "Validate external intelligence against internal evidence",
-    "Do not treat the external score alone as proof of compromise",
 ]
 
 
@@ -130,14 +100,3 @@ def score_lookup(sources: dict, correlation: dict) -> dict:
         "confidence": confidence,
         "score_reasons": reasons,
     }
-
-
-_TEMPLATE_KEY_ALIASES = {"md5": "hash", "sha1": "hash", "sha256": "hash"}
-
-
-def analyst_guidance_for(indicator_type: str) -> list:
-    template_key = _TEMPLATE_KEY_ALIASES.get(indicator_type, indicator_type)
-    type_specific = _ACTION_TEMPLATES.get(template_key, _ACTION_TEMPLATES["ipv4"])
-    # Base guidance mirrors the spec's example JSON; type-specific guidance
-    # gives the analyst something concrete to act on immediately.
-    return type_specific + _BASE_GUIDANCE

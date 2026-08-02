@@ -319,6 +319,27 @@ def test_score_lookup_recognizes_eicar_by_known_hash():
     assert not any(r["source"] == "Classification override" for r in result["score_reasons"])
 
 
+def test_eicar_hash_constant_lengths_are_valid():
+    # Regression: the SHA256 entry was originally transcribed one character
+    # short (63 chars) and silently never matched any real SHA256 lookup.
+    from app.ioc.scoring import _EICAR_HASHES
+    for h in _EICAR_HASHES:
+        assert len(h) in (32, 40, 64), f"{h!r} is not a valid MD5/SHA1/SHA256 length"
+
+
+def test_score_lookup_recognizes_eicar_by_known_sha256():
+    sources = {
+        "abuseipdb": {"status": "unsupported_type"},
+        "virustotal": {"status": "success", "malicious": 60, "suspicious": 0, "harmless": 5, "malware_family": "virus.eicar/test"},
+        "otx": {"status": "success", "pulse_count": 12},
+        "urlhaus": {"status": "success", "matches": 1},
+        "threatpulse": {"status": "no_match", "mention_count": 0},
+    }
+    correlation = {"status": "no_match", "mention_count": 0, "mentions": []}
+    result = score_lookup(sources, correlation, indicator="275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f")
+    assert result["verdict"] == "security_test_artifact"
+
+
 def test_score_lookup_recognizes_eicar_by_family_label_fallback():
     # A hash not on the known-EICAR allowlist (e.g. a repackaged variant),
     # but VirusTotal's own family label still names it as EICAR.

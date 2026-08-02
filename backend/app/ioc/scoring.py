@@ -47,10 +47,11 @@ _VERDICTS = [
 # canonical EICAR test string in each digest format (stable, publicly known,
 # never change - this isn't a moving detection signature).
 _EICAR_HASHES = {
-    "44d88612fea8a8f36de82e1278abb02f",  # MD5
-    "3395856ce81f2b7382dee72602f798b642f14140",  # SHA1
-    "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0",  # SHA256
+    "44d88612fea8a8f36de82e1278abb02f",  # MD5 (32 chars)
+    "3395856ce81f2b7382dee72602f798b642f14140",  # SHA1 (40 chars)
+    "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f",  # SHA256 (64 chars)
 }
+assert {len(h) for h in _EICAR_HASHES} == {32, 40, 64}, "EICAR hash constant has a wrong-length entry"
 
 
 def _is_eicar_test_file(indicator: str, sources: dict) -> bool:

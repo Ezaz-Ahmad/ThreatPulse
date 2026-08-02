@@ -25,6 +25,7 @@ const VERDICT_COLOR = {
   moderate_risk_indicators: "var(--warn)",
   low_risk_indicators: "var(--accent-2)",
   no_significant_indicators: "var(--ok)",
+  security_test_artifact: "var(--info)",
 };
 
 const PRIORITY_META = {
@@ -32,6 +33,7 @@ const PRIORITY_META = {
   medium: { label: "Medium Priority", cls: "ioc-priority-medium" },
   low: { label: "Low Priority", cls: "ioc-priority-low" },
   none: { label: "No Action Needed", cls: "ioc-priority-none" },
+  info: { label: "Security Test — Not Malicious", cls: "ioc-priority-info" },
 };
 
 function providerDetail(name, result) {

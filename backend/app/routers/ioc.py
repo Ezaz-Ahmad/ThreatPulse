@@ -92,7 +92,7 @@ def lookup_ioc(payload: IOCLookupRequest, db: Session = Depends(get_db)):
         "mention_count": correlation["mention_count"],
     }
 
-    scored = score_lookup(sources, correlation)
+    scored = score_lookup(sources, correlation, indicator)
     guidance = generate_recommendations(indicator_type, scored["verdict"], sources, correlation)
     fetched_at = datetime.now(timezone.utc)
 

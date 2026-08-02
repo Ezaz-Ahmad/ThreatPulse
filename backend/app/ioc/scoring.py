@@ -37,6 +37,31 @@ _VERDICTS = [
     (0, "no_significant_indicators", "No significant indicators found"),
 ]
 
+# The EICAR test file is a standardized, publicly-published byte string every
+# AV/EDR engine is deliberately built to flag - that's its entire purpose
+# (see https://www.eicar.org/download-anti-malware-testfile/). Every provider
+# "agreeing" it's malicious is expected behaviour, not corroborating evidence
+# of a real threat, so it must never reach the normal scoring/override path -
+# high detection counts there would otherwise trigger strong_malicious_
+# indicators exactly the way real confirmed malware does. Hashes are the
+# canonical EICAR test string in each digest format (stable, publicly known,
+# never change - this isn't a moving detection signature).
+_EICAR_HASHES = {
+    "44d88612fea8a8f36de82e1278abb02f",  # MD5
+    "3395856ce81f2b7382dee72602f798b642f14140",  # SHA1
+    "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0",  # SHA256
+}
+
+
+def _is_eicar_test_file(indicator: str, sources: dict) -> bool:
+    if indicator and indicator.lower() in _EICAR_HASHES:
+        return True
+    # Fallback for cases the hash allowlist misses (e.g. a modified/repacked
+    # EICAR variant) - VirusTotal's own classification reliably names it.
+    family = (sources.get("virustotal", {}).get("malware_family") or "").lower()
+    return "eicar" in family
+
+
 # External providers whose "success" status represents an independent
 # positive match on the indicator (as opposed to a clean/no-match result,
 # or a provider that wasn't configured/didn't support this indicator type).
@@ -107,7 +132,7 @@ def _evidence_override(verdict_key: str, verdict_label: str, sources: dict):
     return verdict_key, verdict_label, None
 
 
-def score_lookup(sources: dict, correlation: dict) -> dict:
+def score_lookup(sources: dict, correlation: dict, indicator: str = None) -> dict:
     """Compute risk_score, verdict, confidence and score_reasons from provider results."""
     reasons = []
     score = 0
@@ -165,14 +190,31 @@ def score_lookup(sources: dict, correlation: dict) -> dict:
     score = min(score, 100)
     verdict_key, verdict_label = _verdict_for(score)
 
-    # Evidence override: may raise the classification above what the raw
-    # score alone would justify (e.g. score capped at 65 purely because
-    # ThreatPulse had no prior record). risk_score itself is never touched -
-    # only verdict_key/verdict_label, and (via rules.priority_for_verdict())
-    # response priority downstream. See _evidence_override's docstring.
-    verdict_key, verdict_label, override_reason = _evidence_override(verdict_key, verdict_label, sources)
-    if override_reason:
-        reasons.append({"source": "Classification override", "points": 0, "reason": override_reason})
+    if _is_eicar_test_file(indicator, sources):
+        # Deliberately bypasses _evidence_override entirely - EICAR is
+        # designed to trigger every provider's malicious signal at once,
+        # which is exactly the corroboration pattern that override escalates
+        # on. Treating it as confirmed malware here would be the same
+        # mistake in the opposite direction.
+        verdict_key = "security_test_artifact"
+        verdict_label = "Known security-testing artifact — EICAR test file"
+        reasons.append({
+            "source": "EICAR detection",
+            "points": 0,
+            "reason": "This is the standard EICAR antivirus test file, not real malware. "
+                      "Every AV/EDR engine is intentionally built to flag this exact byte "
+                      "string, so a high detection count here is expected, not evidence of a threat.",
+        })
+    else:
+        # Evidence override: may raise the classification above what the raw
+        # score alone would justify (e.g. score capped at 65 purely because
+        # ThreatPulse had no prior record). risk_score itself is never
+        # touched - only verdict_key/verdict_label, and (via
+        # rules.priority_for_verdict()) response priority downstream. See
+        # _evidence_override's docstring.
+        verdict_key, verdict_label, override_reason = _evidence_override(verdict_key, verdict_label, sources)
+        if override_reason:
+            reasons.append({"source": "Classification override", "points": 0, "reason": override_reason})
 
     attempted = [s for s in sources.values() if s.get("status") != "unsupported_type"]
     answered = [s for s in attempted if s.get("status") in ("success", "no_match")]

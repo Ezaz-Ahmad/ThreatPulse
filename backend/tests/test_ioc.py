@@ -298,6 +298,73 @@ def test_score_lookup_does_not_escalate_weak_single_signal():
     assert not any(r["source"] == "Classification override" for r in result["score_reasons"])
 
 
+def test_score_lookup_recognizes_eicar_by_known_hash():
+    # Real EICAR test file: every AV/EDR engine is designed to flag it, so
+    # this deliberately uses strong-looking sources (high VT count, OTX
+    # pulses, URLhaus match) that would otherwise trigger the evidence
+    # override - EICAR must be recognized before that logic ever runs.
+    sources = {
+        "abuseipdb": {"status": "unsupported_type"},
+        "virustotal": {"status": "success", "malicious": 60, "suspicious": 0, "harmless": 5, "malware_family": "virus.eicar/test"},
+        "otx": {"status": "success", "pulse_count": 12},
+        "urlhaus": {"status": "success", "matches": 1},
+        "threatpulse": {"status": "no_match", "mention_count": 0},
+    }
+    correlation = {"status": "no_match", "mention_count": 0, "mentions": []}
+    result = score_lookup(sources, correlation, indicator="44d88612fea8a8f36de82e1278abb02f")
+    assert result["verdict"] == "security_test_artifact"
+    assert "eicar" in result["verdict_label"].lower()
+    assert priority_for_verdict(result["verdict"]) == "info"
+    assert any(r["source"] == "EICAR detection" for r in result["score_reasons"])
+    assert not any(r["source"] == "Classification override" for r in result["score_reasons"])
+
+
+def test_score_lookup_recognizes_eicar_by_family_label_fallback():
+    # A hash not on the known-EICAR allowlist (e.g. a repackaged variant),
+    # but VirusTotal's own family label still names it as EICAR.
+    sources = {
+        "abuseipdb": {"status": "not_configured"},
+        "virustotal": {"status": "success", "malicious": 55, "suspicious": 0, "harmless": 10, "malware_family": "Eicar-Test-Signature"},
+        "otx": {"status": "not_configured"},
+        "urlhaus": {"status": "no_match"},
+        "threatpulse": {"status": "no_match", "mention_count": 0},
+    }
+    correlation = {"status": "no_match", "mention_count": 0, "mentions": []}
+    result = score_lookup(sources, correlation, indicator="c" * 64)
+    assert result["verdict"] == "security_test_artifact"
+
+
+def test_generate_recommendations_eicar_gets_dedicated_actions():
+    result = generate_recommendations("md5", "security_test_artifact", _sources(), _correlation())
+    assert result["priority"] == "info"
+    joined = " ".join(result["actions"]).lower()
+    assert "authorised" in joined or "authorized" in joined
+    assert "do not trigger automated incident containment" in joined
+    # Must not get padded with the normal hash-type guidance (process tree,
+    # quarantine status, isolation) - EICAR's own action text legitimately
+    # mentions "AV/EDR" once, so check for the specific hash_rules lines
+    # instead of a bare "edr" substring.
+    assert not any("process tree" in a.lower() or "isolate" in a.lower() or "quarantine" in a.lower() for a in result["actions"])
+
+
+def test_lookup_endpoint_recognizes_eicar_hash(client, db_session, monkeypatch):
+    def fake_eicar_query_all(indicator, indicator_type):
+        return {
+            "abuseipdb": {"status": "unsupported_type"},
+            "virustotal": {"status": "success", "malicious": 60, "suspicious": 0, "harmless": 5, "malware_family": "virus.eicar/test"},
+            "otx": {"status": "success", "pulse_count": 12},
+            "urlhaus": {"status": "success", "matches": 1},
+        }
+
+    monkeypatch.setattr(ioc_router, "query_all", fake_eicar_query_all)
+    resp = client.post("/api/ioc/lookup", json={"indicator": "44d88612fea8a8f36de82e1278abb02f"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["verdict"] == "security_test_artifact"
+    assert body["analyst_guidance"]["priority"] == "info"
+    assert not any("isolate" in a.lower() for a in body["analyst_guidance"]["actions"])
+
+
 def test_score_lookup_no_signal_is_low_confidence():
     sources = {
         "abuseipdb": {"status": "not_configured"},

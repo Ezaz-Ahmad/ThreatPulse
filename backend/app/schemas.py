@@ -88,7 +88,7 @@ class ScoreReason(BaseModel):
 
 
 class AnalystGuidance(BaseModel):
-    # "high" | "medium" | "low" | "none" - see app/ioc/rules/__init__.py
+    # "high" | "medium" | "low" | "none" | "info" - see app/ioc/rules/__init__.py
     priority: str
     actions: List[str]
 

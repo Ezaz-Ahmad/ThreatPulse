@@ -30,7 +30,26 @@ _VERDICT_TO_PRIORITY = {
     "moderate_risk_indicators": "medium",
     "low_risk_indicators": "low",
     "no_significant_indicators": "none",
+    # Not a risk tier at all - scoring.py's EICAR detection routes here so
+    # this never gets treated as "no findings" (there IS something worth an
+    # analyst's attention: an unexpected AV test artifact) or as "malicious"
+    # (it categorically isn't). "info" is its own lane, not a point on the
+    # high/medium/low/none risk ladder.
+    "security_test_artifact": "info",
 }
+
+# EICAR is a known, fixed test string - there's nothing to investigate about
+# "its behaviour" (it has none) or a family to research. The guidance here
+# is deliberately about process/authorization, not malware response, and
+# bypasses type_module/family/group layering entirely (see
+# generate_recommendations below) so it can never get padded out with
+# hash-EDR-sweep or family-specific actions that don't apply to it.
+_EICAR_ACTIONS = [
+    "Confirm whether an authorised AV/EDR test was running on this host.",
+    "Verify the source, host, and testing window against your security-testing schedule.",
+    "If this appears with no known test in progress, treat it as a policy or security-testing-process question, not a malware incident.",
+    "Do not trigger automated incident containment based on this file alone - EICAR is inert and every AV engine is designed to flag it on purpose.",
+]
 
 _TYPE_MODULES = {
     "ipv4": ip_rules,
@@ -59,6 +78,10 @@ def priority_for_verdict(verdict: str) -> str:
 def generate_recommendations(indicator_type: str, verdict: str, sources: dict, correlation: dict) -> dict:
     """Build {"priority": ..., "actions": [...]} for the given lookup result."""
     priority = _VERDICT_TO_PRIORITY.get(verdict, "low")
+
+    if verdict == "security_test_artifact":
+        return {"priority": priority, "actions": list(_EICAR_ACTIONS)}
+
     type_module = _TYPE_MODULES.get(indicator_type, ip_rules)
 
     actions = list(type_module.actions_for(priority))
